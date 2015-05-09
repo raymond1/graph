@@ -31,22 +31,29 @@ orientation.push(new Vector(1,0,0));
 orientation.push(new Vector(0,0,-1));
 //option angleStep
 var angleStep = 10;
+
+window.graph = new Object;
+window.graph.hotkeyFunctionMap = new Object;
+
+
 function start(){
   var initializationObject = 
   [  
-    ["panRight", panRight, "Pan right"],
-    ["panLeft", panLeft, "Pan left"],
-    ["panUp", panUp, "Pan up"],
-    ["panSown", panDown, "Pan down"],
-    ["rotateClockwise", rotateClockwise, "Rotate clockwise"],
-    ["rotateCounterclockwise", rotateCounterclockwise, "Rotate counterclockwise"],
-    ["moveForward", moveForward, "Move forwards"],
-    ["moveBackward", moveBackward, "Move backwards"],
-    ["moveUp", moveUp, "Move up"],
-    ["moveDown", moveDown, "Move down"],
-    ["moveLeft", moveLeft, "Move left"],
-    ["moveRight", moveRight, "Move right"]
+    ["panRight", panRight, "Pan right", "d"],
+    ["panLeft", panLeft, "Pan left", "a"],
+    ["panUp", panUp, "Pan up", "w"],
+    ["panDown", panDown, "Pan down", "s"],
+    ["rotateClockwise", rotateClockwise, "Rotate clockwise", "e"],
+    ["rotateCounterclockwise", rotateCounterclockwise, "Rotate counterclockwise", "q"],
+    ["moveForward", moveForward, "Move forwards", "i"],
+    ["moveBackward", moveBackward, "Move backwards", "o"],
 
+    ["moveUp", moveUp, "Move up", "t"],
+    ["moveDown", moveDown, "Move down", "g"],
+    ["moveLeft", moveLeft, "Move left", "f"],
+    ["moveRight", moveRight, "Move right", "h"],
+    ["increaseFocalLength", increaseFocalLength, "Zoom out", "l"],
+    ["decreaseFocalLength", decreaseFocalLength, "Zoom in", "k"]
   ];
   
   function insertAfter(elementToInsert, targetLocation){
@@ -57,12 +64,24 @@ function start(){
   function generateButtons(_initializationObject){
     var canvasParent = canvas.parentNode;
     var previouslyInsertedElement = null;
-    for (var i in _initializationObject){
+    for (var i = 0; i < _initializationObject.length; i++){
       var newButton = document.createElement("button");
-      newButton.setAttribute("id", _initializationObject[i][0]);
-      newButton.addEventListener("click", _initializationObject[i][1]);
-      newButton.appendChild(document.createTextNode(_initializationObject[i][2]));
+      var _buttonID = _initializationObject[i][0];
+      var _function = _initializationObject[i][1];
+      var _label = _initializationObject[i][2];
+      var _hotkey = _initializationObject[i][3];
+
+      newButton.setAttribute("id", _buttonID);
+      newButton.addEventListener("click", _function);
+      var labelText = document.createTextNode(_label);
+      newButton.appendChild(labelText);
       newButton.setAttribute("style", "float: left; clear: both;");
+
+      //add a hotkey if it is available
+      if (_initializationObject[i][3] != null){
+        window.graph.hotkeyFunctionMap[_hotkey] = _function;
+        labelText.nodeValue += " (" + _hotkey +")";
+      }
       
       if (previouslyInsertedElement == null){
         insertAfter(newButton, canvas);
@@ -70,6 +89,8 @@ function start(){
       else{
         insertAfter(newButton, previouslyInsertedElement);
       }
+
+
       previouslyInsertedElement = newButton;
     }
   }
@@ -224,7 +245,17 @@ function start(){
     camera.moveDown();
     window.renderer.renderScene();
   }
+
+  function increaseFocalLength(){
+    camera.focalLength = camera.focalLength * 2;
+    window.renderer.renderScene();
+  }
   
+  function decreaseFocalLength(){
+    camera.focalLength = camera.focalLength / 2;
+    window.renderer.renderScene();
+  }
+
   function generateExponentialPoints(){
     var datapoints = [];
     //x axis is the sum of factors
@@ -259,21 +290,19 @@ function start(){
     }
     return minDatapoint;
   }
+
+
   
   function getKeyPress(e){
     var evtobj=window.event? event : e;
     var unicode=evtobj.charCode? evtobj.charCode : evtobj.keyCode;
     var key=String.fromCharCode(unicode)
-    if (key=="a")
-        panLeft();
-    if (key=="d")
-        panRight();
-    if (key=="w") panUp();
-    if (key=="s") panDown();
-    if (key=="q") rotateCounterclockwise();
-    if (key=="e") rotateClockwise();
-    if (key=="i") moveForward();
-    if (key=="o") moveBackward();
+
+    if (window.graph.hotkeyFunctionMap[key] != null){
+      window.graph.hotkeyFunctionMap[key]();
+    }
+
+
     if (key=="p") analyzer.disableMessages = !analyzer.disableMessages;
   }
 
