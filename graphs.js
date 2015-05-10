@@ -90,7 +90,6 @@ function start(){
         insertAfter(newButton, previouslyInsertedElement);
       }
 
-
       previouslyInsertedElement = newButton;
     }
   }
@@ -290,8 +289,6 @@ function start(){
     }
     return minDatapoint;
   }
-
-
   
   function getKeyPress(e){
     var evtobj=window.event? event : e;
