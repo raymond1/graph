@@ -14,3 +14,15 @@ MyMath.getRandomBit = function(){
 MyMath.convertDecimalNumberToHexadecimalString = function(decimalNumber){
   return decimalNumber.toString(16);
 }
+
+MyMath.max = function(numberList){
+  var maximum = numberList[0];
+  for (var i = 0; i < numberList.length; i++){
+    if (numberList[i] > maximum){
+      maximum = numberList[i];
+    }
+  }
+  return maximum;
+}
+
+MyMath.getMax = MyMath.max;

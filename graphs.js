@@ -1,60 +1,34 @@
-//this file assumes the existence of debugger.js
-//math.js
-//vector.js
-//in that order
-//maybe some other stuff too
-var analyzer = new Debugger(canvas);
-
-
-//About the coordinate system:
-//y is --------> direction
-//x is |
-//     |
-//     |
-//     V
-//z is positive going out of the screen. Behind the screen is negative z.
-
 var canvas = document.getElementsByTagName("canvas")[0];
-
-canvas.height = 500;
-canvas.width = 500;
-var context = canvas.getContext("2d");
-
-var canvasWrapper = document.getElementById("canvasWrapper");
-analyzer.attach(canvasWrapper);
-
-analyzer.disableMessages = false;
-
-var camera = new Camera(new Vector(0,-10, 0));
-var orientation = new CoordinateSystem();
-orientation.push(new Vector(1,0,0));
-orientation.push(new Vector(0,0,-1));
-//option angleStep
-var angleStep = 10;
-
-window.graph = new Object;
-window.graph.hotkeyFunctionMap = new Object;
-
+var posts = new Posts(canvas);
 
 function start(){
-  var initializationObject = 
-  [  
-    ["panRight", panRight, "Pan right", "d"],
-    ["panLeft", panLeft, "Pan left", "a"],
-    ["panUp", panUp, "Pan up", "w"],
-    ["panDown", panDown, "Pan down", "s"],
-    ["rotateClockwise", rotateClockwise, "Rotate clockwise", "e"],
-    ["rotateCounterclockwise", rotateCounterclockwise, "Rotate counterclockwise", "q"],
-    ["moveForward", moveForward, "Move forwards", "i"],
-    ["moveBackward", moveBackward, "Move backwards", "o"],
-
-    ["moveUp", moveUp, "Move up", "t"],
-    ["moveDown", moveDown, "Move down", "g"],
-    ["moveLeft", moveLeft, "Move left", "f"],
-    ["moveRight", moveRight, "Move right", "h"],
-    ["increaseFocalLength", increaseFocalLength, "Zoom out", "l"],
-    ["decreaseFocalLength", decreaseFocalLength, "Zoom in", "k"]
-  ];
+  function calculateGraphRadius(centroid,datapoints){
+    var distances = [];
+    for (var i = 0; i < datapoints.length; i++){
+      var distance = Vector.distance(centroid,datapoints[i]);
+      distances[i] = distance;
+    }
+    var greatestDistance = MyMath.max(distances);
+    return greatestDistance;
+  }
+  
+  //assumes an array of vectors is passed in
+  //calculates a 3d centroid
+  function calculateCentroid(datapoints){
+    var numberOfPoints = datapoints.length;
+    var totalX = 0;
+    var totalY = 0;
+    var totalZ = 0;
+    for (var i = 0; i < numberOfPoints; i++){
+      totalX += datapoints[i].getX();
+      totalY += datapoints[i].getY();
+      totalZ += datapoints[i].getZ();
+    }
+    var averageX = totalX/numberOfPoints;
+    var averageY = totalY/numberOfPoints;
+    var averageZ = totalZ/numberOfPoints;
+    return new Vector(averageX,averageY,averageZ);
+  }
   
   function insertAfter(elementToInsert, targetLocation){
     var parentElement = targetLocation.parentNode;
@@ -62,7 +36,7 @@ function start(){
   }
   
   function generateButtons(_initializationObject){
-    var canvasParent = canvas.parentNode;
+    var canvasParent = window.graph.canvas.parentNode;
     var previouslyInsertedElement = null;
     for (var i = 0; i < _initializationObject.length; i++){
       var newButton = document.createElement("button");
@@ -84,7 +58,7 @@ function start(){
       }
       
       if (previouslyInsertedElement == null){
-        insertAfter(newButton, canvas);
+        insertAfter(newButton, window.graph.canvas);
       }
       else{
         insertAfter(newButton, previouslyInsertedElement);
@@ -93,41 +67,6 @@ function start(){
       previouslyInsertedElement = newButton;
     }
   }
-  
-  generateButtons(initializationObject);
-  //this.datapoints = generateCircle();
-  //this.datapoints = generatePoint();
-  this.datapoints = generateExponentialPoints();
-  
-  this.highestDatapoint = getHighestDatapoint(this.datapoints);
-  this.lowestDatapoint = getLowestDatapoint(this.datapoints);
-  this.height = this.highestDatapoint.getZ() - this.lowestDatapoint.getZ();
-  
-  var scene = new Scene();
-  for (var i = 0; i < this.datapoints.length; i++){
-    var colourString;
-    if (this.height == 0){
-      colourString = "#000000";
-    }else{
-      colourString = Colour.getNeutralString(Math.floor((this.datapoints[i].getZ() - this.lowestDatapoint.getZ())/this.height* Colour.numberOfGrays));
-    }
-    
-    var point = new Point
-    (
-      this.datapoints[i].getX(),
-      this.datapoints[i].getY(),
-      this.datapoints[i].getZ(),
-      colourString
-    );
-    scene.addPoint(point);
-  }
-
-
-  
-  this.scene = scene;
-  window.renderer = new Renderer(this.camera, this.scene, canvas, context);
-  window.renderer.renderScene();
-      
 
   function generatePoint(){
     var datapoints = [];
@@ -183,75 +122,125 @@ function start(){
     return this.datapoints;
   }
   
-  function panLeft(){
-    camera.panLeft();
+  function cameraInFocusMode(){
+    if (window.graph.cameraMode == "focus point"){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  
+  
+  //This function does the following:
+  //1)Makes sure the camera is focused on the focus point
+  //2)Plane of rotation is defined by x axis of the camera and the focus point and the position of the camera
+  //The y axis of the camera is perpendicular to this plane.
+  //
+  //rotates the camera's position
+  function rotateCameraLeftAroundFocusPoint(){
+    var degreesToRotate = 1;
+    var radiansToRotate = degreesToRotate * Math.PI/180;
+    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.yAxis,radiansToRotate));
+    window.graph.camera.focus(window.graph.focusPoint);
+  }
+
+  function rotateCameraRightAroundFocusPoint(){
+    var degreesToRotate = -1;
+    var radiansToRotate = degreesToRotate * Math.PI/180;
+    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.yAxis,radiansToRotate));
+    window.graph.camera.focus(window.graph.focusPoint);
+  }
+  
+  function render(){
     window.renderer.renderScene();
   }
 
+  function panLeftHead(){
+    Logic.binaryCondition(cameraInFocusMode, rotateCameraLeftAroundFocusPoint, _panLeft);
+  }
+  
+  function _panLeft(){
+    window.graph.camera.panLeft();    
+  }
+  
+  function panLeft(){
+    Logic.doAThenB(panLeftHead, render);
+  }
+
+  function _panRight(){
+    window.graph.camera.panRight();
+  }
+  
+  function panRightHead(){
+    Logic.binaryCondition(cameraInFocusMode, rotateCameraRightAroundFocusPoint, _panRight);
+  }
+  
   function panRight(){
-    camera.panRight();
-    window.renderer.renderScene();
+    Logic.doAThenB(panRightHead, render);
   }
 
   function panUp(){
-    camera.panUp();
+    window.graph.camera.panUp();
     window.renderer.renderScene();
   }
   
   function panDown(){
-    camera.panDown();
+    window.graph.camera.panDown();
     window.renderer.renderScene();
   }
 
   function rotateClockwise(angleStep){
-    camera.rotateClockwise();
+    window.graph.camera.rotateClockwise();
     //camera.rotateAroundAxis({angle:1 * angleStep,axisNumber:2});
     window.renderer.renderScene();
   }
   
   function rotateCounterclockwise(angleStep){
-    camera.rotateCounterclockwise();
+    window.graph.camera.rotateCounterclockwise();
     //camera.rotateAroundAxis({angle:-1 * angleStep,axisNumber:2});
     window.renderer.renderScene();
   }
   
   function moveForward(){
-    camera.moveForward();
+    window.graph.camera.moveForward();
     window.renderer.renderScene();
   }
   
   function moveBackward(){
-    camera.moveBackward();
+    window.graph.camera.moveBackward();
     window.renderer.renderScene();
   }
   
   function moveRight(){
-    camera.moveRight();
+    window.graph.camera.moveRight();
     window.renderer.renderScene();
   }
   
   function moveLeft(){
-    camera.moveLeft();
+    window.graph.camera.moveLeft();
     window.renderer.renderScene();
   }
   
   function moveUp(){
-    camera.moveUp();
+    window.graph.camera.moveUp();
     window.renderer.renderScene();
   }
   
   function moveDown(){
-    camera.moveDown();
+    window.graph.camera.moveDown();
     window.renderer.renderScene();
   }
 
   function increaseFocalLength(){
-    camera.focalLength = camera.focalLength * 2;
+    window.graph.camera.focalLength = window.graph.camera.focalLength * 2;
     window.renderer.renderScene();
   }
   
   function decreaseFocalLength(){
-    camera.focalLength = camera.focalLength / 2;
+    window.graph.camera.focalLength = window.graph.camera.focalLength / 2;
     window.renderer.renderScene();
   }
 
@@ -290,6 +279,15 @@ function start(){
     return minDatapoint;
   }
   
+  function switchCameraMode(){
+    if (window.graph.cameraMode == "focus point"){
+      setCameraMode("free camera");
+    }
+    else{
+      setCameraMode("focus point");
+    }
+  }
+  
   function getKeyPress(e){
     var evtobj=window.event? event : e;
     var unicode=evtobj.charCode? evtobj.charCode : evtobj.keyCode;
@@ -300,12 +298,108 @@ function start(){
     }
 
 
-    if (key=="p") analyzer.disableMessages = !analyzer.disableMessages;
+    if (key=="p") posts.disableMessages = !posts.disableMessages;
   }
 
-  document.onkeypress = getKeyPress;
 
 
+  function init(){
+    canvas.height = 500;
+    canvas.width = 500;
+    var context = canvas.getContext("2d");
+
+    var canvasWrapper = document.getElementById("canvasWrapper");
+    posts.attach(canvasWrapper);
+
+    posts.disableMessages = false;
+
+    
+    
+
+    var angleStep = 10;
+
+    window.graph = new Object;
+    window.graph.canvas = canvas;
+    window.graph.camera = new Camera(new Vector(0,-10, 0));
+    window.graph.hotkeyFunctionMap = new Object;
+    
+    //there are two available camera modes: "focus point" and "free camera"
+    window.graph.cameraMode = "focus point";
+    
+    posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
+    
+    var initializationObject = 
+    [  
+      ["panRight", panRight, "Pan right", "d"],
+      ["panLeft", panLeft, "Pan left", "a"],
+      ["panUp", panUp, "Pan up", "w"],
+      ["panDown", panDown, "Pan down", "s"],
+      ["rotateClockwise", rotateClockwise, "Rotate clockwise", "e"],
+      ["rotateCounterclockwise", rotateCounterclockwise, "Rotate counterclockwise", "q"],
+      ["moveForward", moveForward, "Move forwards", "i"],
+      ["moveBackward", moveBackward, "Move backwards", "o"],
+
+      ["moveUp", moveUp, "Move up", "t"],
+      ["moveDown", moveDown, "Move down", "g"],
+      ["moveLeft", moveLeft, "Move left", "f"],
+      ["moveRight", moveRight, "Move right", "h"],
+      ["increaseFocalLength", increaseFocalLength, "Zoom out", "l"],
+      ["decreaseFocalLength", decreaseFocalLength, "Zoom in", "k"],
+      
+      ["switchCameraMode", switchCameraMode, "Switch camera mode", "j"]
+    ];
+
+    
+    generateButtons(initializationObject);
+    this.datapoints = generateExponentialPoints();
+    
+    this.highestDatapoint = getHighestDatapoint(this.datapoints);
+    this.lowestDatapoint = getLowestDatapoint(this.datapoints);
+    this.height = this.highestDatapoint.getZ() - this.lowestDatapoint.getZ();
+
+
+    this.centroid = calculateCentroid(this.datapoints);
+    window.graph.focusPoint = this.centroid;
+    //graphRadius is the distance from the centroid of the graph to the farthest extremity
+    this.graphRadius = calculateGraphRadius(this.centroid, this.datapoints);
+    window.graph.camera.position = new Vector(0,0,2 * this.graphRadius);
+    window.graph.camera.focus(window.graph.focusPoint);
+
+    var scene = new Scene();
+    //plot the centroid for now
+    scene.addPoint(new Point(this.centroid.getX(), this.centroid.getY(), this.centroid.getZ(), "#0000ff"));
+    for (var i = 0; i < this.datapoints.length; i++){
+      var colourString;
+      if (this.height == 0){
+        colourString = "#000000";
+      }else{
+        colourString = Colour.getNeutralString(Math.floor((this.datapoints[i].getZ() - this.lowestDatapoint.getZ())/this.height* Colour.numberOfGrays));
+      }
+      
+      var point = new Point
+      (
+        this.datapoints[i].getX(),
+        this.datapoints[i].getY(),
+        this.datapoints[i].getZ(),
+        colourString
+      );
+      scene.addPoint(point);
+    }
+
+    this.scene = scene;
+    window.renderer = new Renderer(window.graph.camera, this.scene, canvas, context);
+    window.renderer.renderScene();
+  
+    document.onkeypress = getKeyPress;
+    setCameraMode("focus point");
+  }
+  
+  function setCameraMode(cameraMode){
+    window.graph.cameraMode = cameraMode;
+    posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
+  }
+  
+  init();
 }
 
 window.onload = start;

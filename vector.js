@@ -42,13 +42,7 @@ function Vector(){
   
   //if two vectors are the same, then this function returns true.
   this.sameAs = function(vector){
-    if (vector.length() != this.length()) return false;
-    
-    for (var i in this.elements){
-      if (this.getElement(i) != vector.getElement(i)) return false;
-    }
-    
-    return true;
+    return Vector.equal(this, vector);
   }
   //alias
   this.content = this.contents;
@@ -66,7 +60,15 @@ function Vector(){
 
 
 
-
+Vector.equal = function(A,B){
+  if (A.length() != B.length()) return false;
+    
+  for (var i in A.elements){
+    if (A.getElement(i) != B.getElement(i)) return false;
+  }
+    
+  return true;
+}
 
 Vector.add = function (vector1, vector2){
   var newVector = new Vector();
@@ -113,10 +115,10 @@ Vector.projection = function(vector1, vector2){
   return returnVector;
 }
 
-Vector.magnitude = function(vector){
+Vector.magnitude = function(_vector){
   var sum = 0;
-  for (var i = 0; i < vector.length(); i++){
-    sum += MyMath.square(vector.getElement(i));
+  for (var i = 0; i < _vector.length(); i++){
+    sum += MyMath.square(_vector.getElement(i));
   }
   var returnValue = Math.sqrt(sum);
   return returnValue;
@@ -155,6 +157,24 @@ Vector.subtractFirstFromSecond = function(A,B){
   }
   return result;
 }
+
+//returns the vector AB that goes from the tip of vector A to the tip of vector B.
+Vector.getVectorAB = Vector.subtractFirstFromSecond;
+
+Vector.subtractSecondFromFirst = function(A,B){
+  if (A.length() != B.length()){
+    //error
+  }
+  
+  var result = new Vector();
+      
+  for (var i = 0; i < A.length(); i++){
+    result.push(A.getElement(i) - B.getElement(i));
+  }
+  return result;
+}
+
+Vector.subtract = Vector.subtractSecondFromFirst;
 
 //returns a vector that is perpendicular to the one that is passed in.
 Vector.getArbitraryPerpendicularVector = function (vector){
@@ -218,7 +238,6 @@ Vector.getNumberOfNonZeroElements = function (vector){
   return count;
 }
 
-//I admit I don't understand how the cross product is derived.
 Vector.crossProduct = function (vector1,vector2){
   var newVector = new Vector;
   var a = vector1.getX();
@@ -242,8 +261,9 @@ Vector.getNegativeVector = function (vector){
   return newVector;
 }
 
+
 //vector is a point in 3-space that needs to be rotated
-//normal is the axis of rotation
+//normal is the axis of rotation centred on the origin
 //angle is the angle, in radians that the point will be rotated
 
 //C is the name of the normal vector of the axis of rotation
@@ -253,7 +273,7 @@ Vector.getNegativeVector = function (vector){
 //D is the X axis unit vector
 //E is the Y axis unit vector
 //F is the Z axis unit vector
-Vector.rotate3d = function(vector, normal, angle){
+Vector.rotate3dAroundOrigin = function(vector, normal, angle){
   //1) Create 2 arbitrary vectors perpendicular to the normal that is passed in, and also perpendicular to each other.
   //Normal cross A = B
   var unnormalizedA;
@@ -304,6 +324,8 @@ Vector.rotate3d = function(vector, normal, angle){
   return vectorToReturn;
 }
 
+Vector.rotate3d = Vector.rotate3dAroundOrigin;
+
 Vector.getComponent = function (A,B){
   var magnitude = Vector.magnitude(Vector.projection(A,B));
   if (Vector.inOppositeDirections(A,B)){
@@ -321,6 +343,8 @@ Vector.inSameDirections = function (A,B){
   }
   else return false;
 }
+
+Vector.sameDirection = Vector.inSameDirections;
 
 Vector.inOppositeDirections = function (A,B){
   if (Vector.dotProduct(A,B) < 0){
@@ -373,4 +397,39 @@ Vector.copy = function(vector){
 
 Vector.angleBetween = function(vector1,vector2){
   return Math.acos(Vector.dotProduct(vector1,vector2)/(Vector.magnitude(vector1)*Vector.magnitude(vector2)));
+}
+
+//assumes vector1 and vector2 have the same length
+Vector.distance = function(vector1,vector2){
+  var difference = Vector.subtractFirstFromSecond(vector1,vector2);
+  var magnitude = Vector.magnitude(difference);
+  
+  return magnitude;
+}
+
+//returns the furthest point from the reference point
+Vector.getFurthestPoint = function(referencePoint, datapoints){
+  //default datapoint to return is the 0th datapoint
+  var datapointToReturn = datapoints[0];
+
+  for (var i = 0; i < datapoints.length; i++){
+    var distanceFromReferencePointToDatapointToReturn = Vector.distance(datapointToReturn, referencePoint);
+    if (Vector.distance(referencePoint, datapoints[i]) > distanceFromReferencePointToDatapointToReturn){
+      datapointToReturn = datapoints[i];
+    }
+  }
+  
+  return datapointToReturn;
+}
+
+//returns true if A and B are collinear
+Vector.areCollinear = function(A,B){
+  //Turn them both into unit vectors. If they are the same, or if they are flips of one another, then the two vectors are collinear
+  var unitA = Vector.getUnitVector(A);
+  var unitB = Vector.getUnitVector(B);
+  
+  if (Vector.equal(unitA,unitB)||Vector.equal(unitA, Vector.getNegativeVector(B))){
+    return true;
+  }
+  return false;
 }

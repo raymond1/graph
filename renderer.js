@@ -21,7 +21,7 @@ function Renderer(camera, scene, canvas, context){
     
 
     var CP = Vector.subtractFirstFromSecond(this.camera.position, colourPointVector);
-    analyzer.stickyMessage("Camera position:" + this.camera.position.contents(), "camera position");
+    posts.stickyMessage("Camera position:" + this.camera.position.contents(), "camera position");
     var CPInCameraCoordinateSystem = cameraCoordinateSystem.getVector(CP);
     
     //Now calculate perspective.
@@ -44,7 +44,7 @@ function Renderer(camera, scene, canvas, context){
         //pointToDisplay.x = pointToDisplay.y;
         //pointToDisplay.y = temp;
         
-        //analyzer.debugMessage("pointToDisplay:" + pointToDisplay.toString());
+        //posts.debugMessage("pointToDisplay:" + pointToDisplay.toString());
         this.drawPixel(pointToDisplay,colourPoint.colour);
       }
     }
