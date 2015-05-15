@@ -153,6 +153,22 @@ function start(){
     window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.yAxis,radiansToRotate));
     window.graph.camera.focus(window.graph.focusPoint);
   }
+
+  function rotateCameraUpAroundFocusPoint(){
+    var degreesToRotate = 1;
+    var radiansToRotate = degreesToRotate * Math.PI/180;
+    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.xAxis,radiansToRotate));
+    window.graph.camera.focus(window.graph.focusPoint);
+  }
+
+  function rotateCameraDownAroundFocusPoint(){
+    var degreesToRotate = -1;
+    var radiansToRotate = degreesToRotate * Math.PI/180;
+    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.xAxis,radiansToRotate));
+    window.graph.camera.focus(window.graph.focusPoint);
+  }
   
   function render(){
     window.renderer.renderScene();
@@ -182,13 +198,21 @@ function start(){
     Logic.doAThenB(panRightHead, render);
   }
 
-  function panUp(){
+  function _panUp(){
     window.graph.camera.panUp();
+  }
+  
+  function panUp(){
+    Logic.binaryCondition(cameraInFocusMode, rotateCameraUpAroundFocusPoint, _panUp);
     window.renderer.renderScene();
   }
   
-  function panDown(){
+  function _panDown(){
     window.graph.camera.panDown();
+  }
+  
+  function panDown(){
+    Logic.binaryCondition(cameraInFocusMode, rotateCameraDownAroundFocusPoint, _panDown)
     window.renderer.renderScene();
   }
 
@@ -223,7 +247,7 @@ function start(){
     window.graph.camera.moveLeft();
     window.renderer.renderScene();
   }
-  
+ 
   function moveUp(){
     window.graph.camera.moveUp();
     window.renderer.renderScene();
