@@ -131,6 +131,36 @@ function start(){
     }
   }
   
+  //degrees is a number of degrees from -360 to +360.
+  //axis is a string, either "y" or "x"
+  function rotateCameraAroundFocusPoint(degrees, axis){
+    var rotationAxis;
+    switch(axis){
+      case "y":
+        rotationAxis = window.graph.camera.yAxis;
+        break;
+      case "x":
+        rotationAxis = window.graph.camera.xAxis;
+        break;
+      default:
+        break;
+    }
+    
+    var radiansToRotate = degrees * Math.PI/180;
+    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+    
+    if (Vector.isNull(vectorToRotate)){
+      //If the camera is already at the focus point, move the camera backwards, focus, then move towards the focus point
+      window.graph.camera.moveBackward(100);
+      vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
+      window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, rotationAxis,radiansToRotate));
+      window.graph.camera.focus(window.graph.focusPoint);
+      window.graph.camera.position = window.graph.focusPoint;
+    }else{
+      window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, rotationAxis,radiansToRotate));
+      window.graph.camera.focus(window.graph.focusPoint);      
+    }
+  }
   
   //This function does the following:
   //1)Makes sure the camera is focused on the focus point
@@ -139,35 +169,19 @@ function start(){
   //
   //rotates the camera's position
   function rotateCameraLeftAroundFocusPoint(){
-    var degreesToRotate = 1;
-    var radiansToRotate = degreesToRotate * Math.PI/180;
-    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
-    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.yAxis,radiansToRotate));
-    window.graph.camera.focus(window.graph.focusPoint);
+    rotateCameraAroundFocusPoint(1, "y");
   }
 
   function rotateCameraRightAroundFocusPoint(){
-    var degreesToRotate = -1;
-    var radiansToRotate = degreesToRotate * Math.PI/180;
-    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
-    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.yAxis,radiansToRotate));
-    window.graph.camera.focus(window.graph.focusPoint);
+    rotateCameraAroundFocusPoint(-1, "y");
   }
 
   function rotateCameraUpAroundFocusPoint(){
-    var degreesToRotate = 1;
-    var radiansToRotate = degreesToRotate * Math.PI/180;
-    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
-    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.xAxis,radiansToRotate));
-    window.graph.camera.focus(window.graph.focusPoint);
+    rotateCameraAroundFocusPoint(1, "x");
   }
 
   function rotateCameraDownAroundFocusPoint(){
-    var degreesToRotate = -1;
-    var radiansToRotate = degreesToRotate * Math.PI/180;
-    var vectorToRotate = Vector.getVectorAB(window.graph.focusPoint,window.graph.camera.position);
-    window.graph.camera.position = Vector.add(window.graph.focusPoint, Vector.rotate3dAroundOrigin(vectorToRotate, window.graph.camera.xAxis,radiansToRotate));
-    window.graph.camera.focus(window.graph.focusPoint);
+    rotateCameraAroundFocusPoint(-1, "x");
   }
   
   function render(){
@@ -228,8 +242,22 @@ function start(){
     window.renderer.renderScene();
   }
   
-  function moveForward(){
+  function _moveForward(){
     window.graph.camera.moveForward();
+  }
+  
+  function moveCameraTowardFocus(){
+    window.graph.camera.focus(window.graph.focusPoint);
+    window.graph.camera.moveForward(100);
+    
+    //if the camera ends up behind the focus point, then make it stop at the focus point
+    if (!Vector.inSameDirections(window.graph.camera.getZAxis(), Vector.getVectorAB(window.graph.camera.position,window.graph.focusPoint))){
+      window.graph.camera.moveTo(window.graph.focusPoint);
+    }
+  }
+  
+  function moveForward(){
+    Logic.binaryCondition(cameraInFocusMode, moveCameraTowardFocus, _moveForward);
     window.renderer.renderScene();
   }
   

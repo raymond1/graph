@@ -276,34 +276,28 @@ Vector.getNegativeVector = function (vector){
 Vector.rotate3dAroundOrigin = function(vector, normal, angle){
   //1) Create 2 arbitrary vectors perpendicular to the normal that is passed in, and also perpendicular to each other.
   //Normal cross A = B
-  var unnormalizedA;
-  unnormalizedA = Vector.getArbitraryPerpendicularVector(normal); //arbitrary vector in original coordinate system--corresponds to x
+  var A = Vector.getArbitraryPerpendicularVector(normal); //arbitrary vector in original coordinate system--corresponds to x
   
-  var unnormalizedB = Vector.crossProduct(normal,unnormalizedA); //corresponds to y
-  var unnormalizedC = normal; //normal vector in original coordinate system
+  var B = Vector.crossProduct(normal,A); //corresponds to y
+  var C = normal; //normal vector in original coordinate system
   //2) Turn the normal and the two arbitrary vectors all into unit vectors. This is your new coordinate system in terms of the old coordinate system
-  var A = Vector.getUnitVector(unnormalizedA);
-  var B = Vector.getUnitVector(unnormalizedB);
-  var C = Vector.getUnitVector(unnormalizedC);
+  var unitA = Vector.getUnitVector(A);
+  var unitB = Vector.getUnitVector(B);
+  var unitC = Vector.getUnitVector(C);
   
-  A = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(C, A);
-  B = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(A, B);
-  C = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(B, C);
-  A = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(C, A);
-
   //3) Find the vector to be rotated in terms of the new coordinate system.
   var rotationCoordinateSystem = new CoordinateSystem;
-  rotationCoordinateSystem.addAxis(A);
-  rotationCoordinateSystem.addAxis(B);
-  rotationCoordinateSystem.addAxis(C);
+  rotationCoordinateSystem.addAxis(unitA);
+  rotationCoordinateSystem.addAxis(unitB);
+  rotationCoordinateSystem.addAxis(unitC);
   
   var vectorInRotationCoordinateSystem  = rotationCoordinateSystem.getVector(vector);
   //4) Keeping the component of the vector to be rotated(called A from here on) in the direction of the normal the same, calculate the new components in the direction of the two arbitrary vectors after rotation.
   var _2dVector = new Vector(vectorInRotationCoordinateSystem.getX(), vectorInRotationCoordinateSystem.getY());
+  
   var rotated_2dVector = Vector.rotate2d(_2dVector, angle);
   
   var rotatedVectorInRotationSpace = new Vector(rotated_2dVector.getX(), rotated_2dVector.getY(), vectorInRotationCoordinateSystem.getZ());
-
 
   //5) Find the rotated vector in terms of the original coordinate system.  
   var D = new Vector(1,0,0); //x axis in original coordinate system
@@ -318,7 +312,7 @@ Vector.rotate3dAroundOrigin = function(vector, normal, angle){
   normalCoordinateSystemInTermsOfRotationCoordinateSystem.addAxis(G);
   normalCoordinateSystemInTermsOfRotationCoordinateSystem.addAxis(H);
   normalCoordinateSystemInTermsOfRotationCoordinateSystem.addAxis(I);
-
+  
   var vectorToReturn = normalCoordinateSystemInTermsOfRotationCoordinateSystem.getVector(rotatedVectorInRotationSpace);
   
   return vectorToReturn;
@@ -428,8 +422,16 @@ Vector.areCollinear = function(A,B){
   var unitA = Vector.getUnitVector(A);
   var unitB = Vector.getUnitVector(B);
   
-  if (Vector.equal(unitA,unitB)||Vector.equal(unitA, Vector.getNegativeVector(B))){
+  if (Vector.equal(unitA,unitB)||Vector.equal(unitA, Vector.getNegativeVector(unitB))){
     return true;
   }
   return false;
+}
+
+//returns true if A is the null vector
+Vector.isNull = function(A){
+  for (var i = 0; i < A.elements.length; i++){
+    if (A.elements[i] != 0) return false;
+  }
+  return true;
 }

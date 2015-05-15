@@ -15,7 +15,10 @@ function Camera(_vector, orientation){
     this.yAxis = orientation.axes[1];
   }
 
-
+  this.getZAxis = function(){
+    return Vector.crossProduct(this.xAxis,this.yAxis);
+  }
+  
   this.panRight = function(angle){
     if (angle == null){
       angle = 1 * Math.PI/ 180;
@@ -129,16 +132,17 @@ function Camera(_vector, orientation){
 
   //rotates the camera so that it focuses on a particular point
   this.focus = function (point){
-    //if the camera is located at the focus point, then the camera is already focused and nothing needs to be done.
+    //if the camera is located at the focus point, then it is already focused                                                                                                                                                                                                                                                                                                  
     if (Vector.distance(point, this.position) == 0){
       return;
     }
     
     //the direction of the theoretical z axis the camera should point in
     var targetZAxis = Vector.getVectorAB(this.position,point);
-    
     var currentZAxis = Vector.crossProduct(this.xAxis,this.yAxis);
 
+    var unitTargetZAxis = Vector.getUnitVector(targetZAxis);
+    var unitCurrentZAxis = Vector.getUnitVector(currentZAxis);
     
     //need to rotate the current Z axis vector so that it aligns with the target Z axis vector
     //the axis of rotation is the current axis vector cross producted with the target Z axis unit vector
@@ -146,26 +150,34 @@ function Camera(_vector, orientation){
 
     //case 1:
     //when collinear and same direction, done
-    if (Vector.areCollinear(currentZAxis,targetZAxis)){
-      if (Vector.sameDirection(currentZAxis, targetZAxis)){
+    if (Vector.areCollinear(unitCurrentZAxis, unitTargetZAxis)){
+      if (Vector.sameDirection(unitCurrentZAxis, unitTargetZAxis)){
         return;
       }
       else{
         //case 2:
-        //when collinear and opposite directions, use camera y axis as axis of rotation
-        Vector.rotate3d(currentZAxis, this.yAxis,Math.PI);
+        //when collinear and opposite directions, flip the orientation of the camera
+        this.yAxis = Vector.getNegativeVector(this.yAxis);
+        this.xAxis = Vector.getNegativeVector(this.xAxis);
         return;
       }
     }
     
-    //case 3: otherwise, the vectors are not collinear
-    var angleToRotate = Math.acos(Vector.dotProduct(targetZAxis,currentZAxis)/(Vector.magnitude(targetZAxis)* Vector.magnitude(currentZAxis)));
+    //case 3: otherwise, the vectors are not collinear    
+    var dotProduct = Vector.dotProduct(unitTargetZAxis,unitCurrentZAxis);
+    if (dotProduct > 1) dotProduct = 1;
+    if (dotProduct < -1) dotProduct = -1;
+    
+    var angleToRotate = Math.acos(dotProduct);
     var targetZAxisCrossCurrentZAxis = Vector.crossProduct(targetZAxis,currentZAxis);
     var rotationAxis = Vector.getUnitVector(targetZAxisCrossCurrentZAxis);
-    //rotate the camera position clockwise to the focus point
-    Vector.rotate3d(this.position, rotationAxis, -angleToRotate);
-    //also rotate the camera's x and y axes
+
+    //Rotate the camera's x and y axes
     this.yAxis = Vector.rotate3d(this.yAxis, rotationAxis, -angleToRotate);
     this.xAxis = Vector.rotate3d(this.xAxis, rotationAxis, -angleToRotate);
+  }
+  
+  this.moveTo = function(point){
+    this.position = Vector.copy(point);
   }
 }

@@ -1,0 +1,1 @@
+The visual engine is a collection of files that are used to render a 3-dimensional mathematical plot on a 2d computer screen.
