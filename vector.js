@@ -48,10 +48,11 @@ function Vector(){
   this.content = this.contents;
 
 
-  this.length = function(){
+  this.getLength = function(){
     return this.elements.length;
   }
   
+  //this.length = this.getLength;
   
   this.getElement = function(i){
     return this.elements[i];
@@ -61,7 +62,7 @@ function Vector(){
 
 
 Vector.equal = function(A,B){
-  if (A.length() != B.length()) return false;
+  if (A.getLength() != B.getLength()) return false;
     
   for (var i in A.elements){
     if (A.getElement(i) != B.getElement(i)) return false;
@@ -72,7 +73,7 @@ Vector.equal = function(A,B){
 
 Vector.add = function (vector1, vector2){
   var newVector = new Vector();
-  for (var i = 0; i < vector1.length(); i++){
+  for (var i = 0; i < vector1.getLength(); i++){
     newVector.push(vector1.getElement(i) + vector2.getElement(i));
   }
 
@@ -80,8 +81,8 @@ Vector.add = function (vector1, vector2){
 }
 
 Vector.dotProduct = function(a,b){
-  var maxLength = a.length();
-  if (b.length() > maxLength) maxLength = b.length();
+  var maxLength = a.getLength();
+  if (b.getLength() > maxLength) maxLength = b.getLength();
   
   var sum = 0;
   for (var i = 0; i < maxLength; i++){
@@ -94,7 +95,7 @@ Vector.dotProduct = function(a,b){
 Vector.getUnitVector = function(a){
   var b = new Vector();
   var _magnitude = Vector.magnitude(a);
-  for (var i = 0; i < a.length(); i++){
+  for (var i = 0; i < a.getLength(); i++){
     b.push(a.getElement(i)/_magnitude);
   }
   
@@ -108,7 +109,7 @@ Vector.projection = function(vector1, vector2){
   var direction = Vector.getUnitVector(vector2);
   
   var returnVector = new Vector();
-  for (var i = 0; i < vector2.length(); i++){
+  for (var i = 0; i < vector2.getLength(); i++){
     returnVector.push(_magnitude * direction.getElement(i));
   }
   
@@ -117,7 +118,7 @@ Vector.projection = function(vector1, vector2){
 
 Vector.magnitude = function(_vector){
   var sum = 0;
-  for (var i = 0; i < _vector.length(); i++){
+  for (var i = 0; i < _vector.getLength(); i++){
     sum += MyMath.square(_vector.getElement(i));
   }
   var returnValue = Math.sqrt(sum);
@@ -146,13 +147,13 @@ Vector.createCopy = function(vector){
 //assume they have the same size
 //return the vector B - A
 Vector.subtractFirstFromSecond = function(A,B){
-  if (A.length() != B.length()){
+  if (A.getLength() != B.getLength()){
     //error
   }
   
   var result = new Vector();
       
-  for (var i = 0; i < A.length(); i++){
+  for (var i = 0; i < A.getLength(); i++){
     result.push(B.getElement(i) - A.getElement(i));
   }
   return result;

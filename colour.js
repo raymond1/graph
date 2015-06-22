@@ -12,4 +12,5 @@ Colour.getNeutralString = function (grayNumber){
 }
 
 Colour.maxColour = 255;
+Colour.maxGrayNumber = 255;
 Colour.numberOfGrays = 256;

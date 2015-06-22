@@ -4,13 +4,45 @@
 <meta charset="utf-8"/>
 <title>aiiieeee.com/experimental/graphs/index.html</title>
 
+<script type="text/javascript">
+
+var canvas;
+var posts;
+
+function start(){
+  canvas = document.getElementsByTagName("canvas")[0];
+  posts = new Posts(canvas);
+  var initializationObject = {
+    cameraMode: "free camera"
+  };
+  var graph = new Graph(initializationObject);
+}
+
+window.onload = start;
+</script>
+<style>
+body{
+  background: #000000;
+  color: #ffffff;";
+}
+
+button,input{
+  color: #000000;
+}
+</style>
 </head>
-<body style="background: #000000;">
+<body>
 
 <div id="canvasWrapper">
-  <canvas style="border: thick blue solid; clear: both; float: left; display: block;" height="100" width="100"></canvas>
+  <canvas style="border: none; clear: both; float: left; display: block;" height="100" width="100">This is a mathematical plot that requires support for the canvas element to be seen.</canvas>
 </div>
-<div style="clear: both; float: left; width: 100%; height: 1px; display: block; border: thin red solid;">asdf</div>
+<div style="clear: both; float: left; width: 100%; height: 1px; display: block; border: none; color: #ffff00;"></div>
+<!--put your text here-->
+<div style="clear: both;">
+Body bottom
+  asdfsadfsdf
+</div>
+<script type="text/javascript" src="programming.js"></script>
 <script type="text/javascript" src="posts.js"></script>
 <script type="text/javascript" src="logic.js"></script>
 <script type="text/javascript" src="math.js"></script>
@@ -19,8 +51,11 @@
 <script type="text/javascript" src="camera.js"></script>
 <script type="text/javascript" src="graphs.js"></script>
 <script type="text/javascript" src="scene.js"></script>
-<script type="text/javascript" src="point.js"></script>
+<script type="text/javascript" src="colourpoint.js"></script>
+<script type="text/javascript" src="triangle.js"></script>
 <script type="text/javascript" src="colour.js"></script>
 <script type="text/javascript" src="renderer.js"></script>
+<script type="text/javascript" src="virtualgrid.js"></script>
+<script type="text/javascript" src="sorteduniquevaluedarray.js"></script>
 </body>
 </html>

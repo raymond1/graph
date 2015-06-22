@@ -1,4 +1,4 @@
-function Point(x,y,z,colour){
+function ColourPoint(x,y,z,colour){
   this.x = x;
   this.y = y;
   this.z = z;

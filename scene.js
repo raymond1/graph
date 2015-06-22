@@ -2,12 +2,23 @@
 
 function Scene(){
   this.sceneObjects = [];
-  //adds a single point to the scene
-  this.addPoint = function(point){
-    this.sceneObjects.push(point);
+  //adds a single colour point to the scene
+  this.addColourPoint = function(colourPoint){
+    this.sceneObjects.push(colourPoint);
   }
   
-  //adds multiple points to a scene
-  this.addPoints = function(){
+  //adds multiple colour points to a scene
+  this.addMultipleColourPoints = function(colourPoints){
+    for (var i = 0; i < colourPoints.length; i++){
+      this.sceneObjects.push(colourPoints[i]);
+    }
+  }
+  
+  this.addLine = function(line){
+    
+  }
+  
+  this.addTriangle = function(triangle){
+    this.sceneObjects.push(triangle);
   }
 }

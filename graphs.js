@@ -1,7 +1,8 @@
-var canvas = document.getElementsByTagName("canvas")[0];
-var posts = new Posts(canvas);
-
-function start(){
+function Graph(options){
+  if (options == null){
+    options = {};
+  }
+  this.options = options;
   function calculateGraphRadius(centroid,datapoints){
     var distances = [];
     for (var i = 0; i < datapoints.length; i++){
@@ -303,7 +304,7 @@ function start(){
     //z axis is base ^ (sum of factors/base)
     for (var x = 1; x < 20; x = x + 1){
       for (var z = 0; z < 20; z = z + 1){
-        var y = Math.pow(x, z/x);
+        var y = Math.log(Math.pow(x, z/x));
         var tuple = new Vector(x,y,z);
         datapoints.push(tuple);
       }
@@ -355,7 +356,7 @@ function start(){
 
 
 
-  function init(){
+  this.init = function(){
     canvas.height = 500;
     canvas.width = 500;
     var context = canvas.getContext("2d");
@@ -363,20 +364,17 @@ function start(){
     var canvasWrapper = document.getElementById("canvasWrapper");
     posts.attach(canvasWrapper);
 
-    posts.disableMessages = false;
-
-    
-    
+    posts.disableMessages = false;    
 
     var angleStep = 10;
 
     window.graph = new Object;
     window.graph.canvas = canvas;
-    window.graph.camera = new Camera(new Vector(0,-10, 0));
+    window.graph.camera = new Camera(new Vector(0, 0, 0));
     window.graph.hotkeyFunctionMap = new Object;
     
     //there are two available camera modes: "focus point" and "free camera"
-    window.graph.cameraMode = "focus point";
+    window.graph.cameraMode = "free camera";
     
     posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
     
@@ -414,36 +412,43 @@ function start(){
     window.graph.focusPoint = this.centroid;
     //graphRadius is the distance from the centroid of the graph to the farthest extremity
     this.graphRadius = calculateGraphRadius(this.centroid, this.datapoints);
-    window.graph.camera.position = new Vector(0,0,2 * this.graphRadius);
-    window.graph.camera.focus(window.graph.focusPoint);
 
     var scene = new Scene();
-    //plot the centroid for now
-    scene.addPoint(new Point(this.centroid.getX(), this.centroid.getY(), this.centroid.getZ(), "#0000ff"));
+
     for (var i = 0; i < this.datapoints.length; i++){
       var colourString;
       if (this.height == 0){
         colourString = "#000000";
       }else{
-        colourString = Colour.getNeutralString(Math.floor((this.datapoints[i].getZ() - this.lowestDatapoint.getZ())/this.height* Colour.numberOfGrays));
+        colourString = Colour.getNeutralString(Math.floor(((this.datapoints[i].getZ() - this.lowestDatapoint.getZ())/this.height)* Colour.maxGrayNumber));
       }
       
-      var point = new Point
+      var colourPoint = new ColourPoint
       (
-        this.datapoints[i].getX(),
-        this.datapoints[i].getY(),
-        this.datapoints[i].getZ(),
+        new Vector(this.datapoints[i].getX(), this.datapoints[i].getY(), this.datapoints[i].getZ()),
         colourString
       );
-      scene.addPoint(point);
+      scene.addColourPoint(colourPoint);
     }
 
     this.scene = scene;
     window.renderer = new Renderer(window.graph.camera, this.scene, canvas, context);
-    window.renderer.renderScene();
   
     document.onkeypress = getKeyPress;
-    setCameraMode("focus point");
+
+    if (this.options.cameraMode == "free camera"){
+      setCameraMode("free camera");
+    }
+    else if (this.options.cameraMode == "focus point"){
+      setCameraMode("focus point");
+    }
+
+    if (window.graph.cameraMode == "focus point"){
+      window.graph.camera.position = new Vector(0,0,2 * this.graphRadius);
+      window.graph.camera.focus(window.graph.focusPoint);
+    }
+
+    window.renderer.renderScene();
   }
   
   function setCameraMode(cameraMode){
@@ -451,7 +456,5 @@ function start(){
     posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
   }
   
-  init();
+  this.init();
 }
-
-window.onload = start;
