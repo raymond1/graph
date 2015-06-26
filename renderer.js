@@ -95,6 +95,8 @@ function Renderer(camera, scene, canvas, context){
     }
 
     this.virtualGrid.iterate(translateAndDrawPixel);
+    
+    posts.stickyMessage("camera position:" + this.camera.position.getX() + ',' + this.camera.position.getY() + ',' + this.camera.position.getZ());
   }
 
   this.discardColourPointsOutsideViewport = function(){
@@ -108,15 +110,32 @@ function Renderer(camera, scene, canvas, context){
     Programming.iterateThroughList(listOfColourPointsToDiscard, _discardFunction);
   }
 
+  this.getDiscardingFunction = function(){
+    var virtualGrid = this.virtualGrid;
+    ///
+  }
+
+
+  //var discardingFunction = this.getDiscardingFunction();
+  this.getDiscardFunction = function (){
+    var virtualGrid = this.virtualGrid;
+    var functionToReturn = function(colourPoint){
+      virtualGrid.discard(colourPoint);
+    }
+    
+    return functionToReturn;
+  }
   
   this.discardAllColourPointsBehindCamera = function(){
     var listOfColourPointsToDiscard = this.virtualGrid.applyFilter("keep", this.getAllColourPointsBehindCamera);
-    //Programming.iterateThroughList(listOfColourPointsToDiscard, this.virtualGrid.discard); 
+    var discardFunction = this.getDiscardFunction();
+
+    Programming.iterateThroughList(listOfColourPointsToDiscard, discardFunction); 
   }
 
   //if vector is behind the camera(z value less than 0), then this function returns true
   this.getAllColourPointsBehindCamera = function(colourPoint){
-    var returnValue = (colourPoint.vector.getZ() < 0);
+    var returnValue = (colourPoint.vector.getZ() <= 0);
     return returnValue;
   }
 

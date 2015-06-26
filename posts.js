@@ -94,7 +94,7 @@ function Posts(attachmentPoint){
     
     this.attachmentPoint.parentNode.insertBefore(area, this.attachmentPoint.nextSibling);
     
-    area.setAttribute('style', 'background: #ffffff; float: left; display: block; clear: both;');
+    area.setAttribute('style', 'color: #000000; background: #ffffff; float: left; display: block; clear: both;');
     
     
     this.areas[areaName] = area;

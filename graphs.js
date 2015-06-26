@@ -1,3 +1,6 @@
+//properties:
+//var graph = new Graph();
+//graph.centroid = Vector(x,y,z)
 function Graph(options){
   if (options == null){
     options = {};
@@ -305,8 +308,7 @@ function Graph(options){
     for (var x = 1; x < 20; x = x + 1){
       for (var z = 0; z < 20; z = z + 1){
         var y = Math.log(Math.pow(x, z/x));
-        var tuple = new Vector(x,y,z);
-        datapoints.push(tuple);
+        datapoints.push(new Vector(x,y,z));
       }
     }
     return datapoints;
@@ -401,7 +403,7 @@ function Graph(options){
 
     
     generateButtons(initializationObject);
-    this.datapoints = generateExponentialPoints();
+    this.datapoints = generateCircle();//generateExponentialPoints();
     
     this.highestDatapoint = getHighestDatapoint(this.datapoints);
     this.lowestDatapoint = getLowestDatapoint(this.datapoints);
@@ -431,6 +433,8 @@ function Graph(options){
       scene.addColourPoint(colourPoint);
     }
 
+    scene.addColourPoint(new ColourPoint(new Vector(this.centroid.getX(), this.centroid.getY(), this.centroid.getZ()), "#00ff00"))
+    
     this.scene = scene;
     window.renderer = new Renderer(window.graph.camera, this.scene, canvas, context);
   
@@ -443,11 +447,13 @@ function Graph(options){
       setCameraMode("focus point");
     }
 
+    //initial camera location for focus point
     if (window.graph.cameraMode == "focus point"){
       window.graph.camera.position = new Vector(0,0,2 * this.graphRadius);
       window.graph.camera.focus(window.graph.focusPoint);
     }
 
+    posts.stickyMessage("centroid:" + this.centroid.getX() + ',' + this.centroid.getY() + ',' + this.centroid.getZ(), "centroid");
     window.renderer.renderScene();
   }
   

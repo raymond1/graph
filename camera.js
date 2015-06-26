@@ -1,4 +1,7 @@
 //camera always looks into the direction pointed to by this.zAxis
+//
+//camera.position: Vector(x,y,z)
+//camera.focalLength: number
 function Camera(_vector, orientation){
   if (_vector == null){
     _vector = new Vector(0,0,0);
@@ -89,11 +92,9 @@ function Camera(_vector, orientation){
     var newXAxis = Vector.rotate3dAroundOrigin(this.xAxis,zAxis, -angle);
     var newYAxis = Vector.rotate3dAroundOrigin(this.yAxis,zAxis, -angle);
 
-    newXAxis = Vector.getUnitVector(newXAxis);
-    newYAxis = Vector.getUnitVector(newYAxis);
     newXAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(zAxis, newXAxis);
     newYAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(zAxis, newYAxis);
-    //newXAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(newYAxis, newXAxis);
+
     this.xAxis = newXAxis;
     this.yAxis = newYAxis;
   }

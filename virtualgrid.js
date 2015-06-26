@@ -36,10 +36,14 @@ function VirtualGrid(){
     var xToBeDiscarded = colourPointToDiscard.vector.getX();
     var yToBeDiscarded = colourPointToDiscard.vector.getY();
 
+try{
     if (this.objects.length == 0){
       return;
     }
-
+}
+catch(err){
+  debugger;
+}
     var listOfColourPointsWithSameXY = this.objects[xToBeDiscarded][yToBeDiscarded];
 
     var colourPointCoordinatesComparisonFunction = function(B){
