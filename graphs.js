@@ -291,15 +291,25 @@ function Graph(options){
   }
 
   function increaseFocalLength(){
-    window.graph.camera.focalLength = window.graph.camera.focalLength * 2;
+    window.graph.camera.focalLength = window.graph.camera.focalLength * 1.1;
     window.renderer.renderScene();
   }
   
   function decreaseFocalLength(){
-    window.graph.camera.focalLength = window.graph.camera.focalLength / 2;
+    window.graph.camera.focalLength = window.graph.camera.focalLength / 1.1;
     window.renderer.renderScene();
   }
 
+  function increaseMagnification(){
+    window.graph.camera.magnification = window.graph.camera.magnification * 1.1;
+    window.renderer.renderScene();
+  }
+  
+  function decreaseMagnification(){
+    window.graph.camera.magnification = window.graph.camera.magnification / 1.1;
+    window.renderer.renderScene();    
+  }
+  
   function generateExponentialPoints(){
     var datapoints = [];
     //x axis is the sum of factors
@@ -398,12 +408,14 @@ function Graph(options){
       ["increaseFocalLength", increaseFocalLength, "Zoom out", "l"],
       ["decreaseFocalLength", decreaseFocalLength, "Zoom in", "k"],
       
-      ["switchCameraMode", switchCameraMode, "Switch camera mode", "j"]
+      ["switchCameraMode", switchCameraMode, "Switch camera mode", "j"],
+      ["increaseMagnification", increaseMagnification, "Increase Magnification", "+"],
+      ["decreaseMagnification", decreaseMagnification, "Decrease Magnification", "-"]
     ];
 
     
     generateButtons(initializationObject);
-    this.datapoints = generateCircle();//generateExponentialPoints();
+    this.datapoints = generateExponentialPoints();
     
     this.highestDatapoint = getHighestDatapoint(this.datapoints);
     this.lowestDatapoint = getLowestDatapoint(this.datapoints);

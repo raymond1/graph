@@ -42,6 +42,10 @@ function Renderer(camera, scene, canvas, context){
     return new Vector(Math.round(A.getX()), Math.round(A.getY()), Math.round(A.getZ()));
   }
 
+  this.calculateMagnification = function(A){
+    return Vector.scalarMultiply(this.camera.magnification, A);
+  }
+  
   this.withinViewport = function(colourPoint){
     var x = colourPoint.vector.getX();
     var y = colourPoint.vector.getY();
@@ -60,18 +64,23 @@ function Renderer(camera, scene, canvas, context){
 
     //Let B be the coordinates of A, with perspective calculated using the camera's focal length
     var B = this.calculatePerspective(A);
+
+    //Let C be the coordinates of B, with magnification calculated using the camera's magnification.
+    var C = this.calculateMagnification(B);
     
     //approximate the 3d coordinates of the points to be rendered to the closest integer coordinates
-    var C = this.calculateClosestPoint(B);
+    var D = this.calculateClosestPoint(C);
     
     //put C into an x,y grid
-    var newColourPoint = new ColourPoint(C, colourPoint.colour);
-    this.virtualGrid.insert(C.getX(),C.getY(), newColourPoint);
+    var newColourPoint = new ColourPoint(D, colourPoint.colour);
+    this.virtualGrid.insert(D.getX(),D.getY(), newColourPoint);
   }
   
   this.renderScene = function(){
     this.clear();
 
+    
+    
     //render all of the colour points onto the virtual grid
     for (var i = 0; i < this.scene.sceneObjects.length; i++){
       if (this.scene.sceneObjects[i].objectType == "colour point"){

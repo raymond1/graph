@@ -9,6 +9,7 @@ function Camera(_vector, orientation){
   this.position = new Vector(_vector.getX(), _vector.getY(), _vector.getZ());
 
   this.focalLength = 1000;
+  this.magnification = 1;
   
   if (orientation == null){
     this.yAxis = new Vector(0,1,0);
@@ -78,7 +79,7 @@ function Camera(_vector, orientation){
 
     newXAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(zAxis, newXAxis);
     newYAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(zAxis, newYAxis);
-    //newXAxis = Vector.makeUnitVectorPerpendicularToVector1AndCloseToVector2(newYAxis, newXAxis);
+
     this.xAxis = newXAxis;
     this.yAxis = newYAxis;
   }
