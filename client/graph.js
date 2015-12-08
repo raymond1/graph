@@ -2,9 +2,11 @@
 //var graph = new Graph();
 //graph.centroid = Vector(x,y,z)
 function Graph(options){
+  this.objectType = "Graph";
   if (options == null){
     options = {};
   }
+
   this.options = options;
   function calculateGraphRadius(centroid,datapoints){
     var distances = [];
@@ -363,24 +365,31 @@ function Graph(options){
     }
 
 
-    if (key=="p") posts.disableMessages = !posts.disableMessages;
+    if (key=="p") window.graph.posts.disableMessages = !window.graph.posts.disableMessages;
   }
 
 
 
   this.init = function(){
+    var canvasWrapper = document.createElement("div");
+    var canvas = document.createElement('canvas');
+    var body = document.getElementsByTagName('body')[0];
+    body.appendChild(canvasWrapper);
+    canvasWrapper.appendChild(canvas);
+
+
     canvas.height = 500;
     canvas.width = 500;
     var context = canvas.getContext("2d");
 
-    var canvasWrapper = document.getElementById("canvasWrapper");
-    posts.attach(canvasWrapper);
-
-    posts.disableMessages = false;    
 
     var angleStep = 10;
 
     window.graph = new Object;
+    window.graph.posts = new Posts(canvas);
+    window.graph.posts.attach(canvasWrapper);
+    window.graph.disableMessages = false;    
+
     window.graph.canvas = canvas;
     window.graph.camera = new Camera(new Vector(0, 0, 0));
     window.graph.hotkeyFunctionMap = new Object;
@@ -388,7 +397,7 @@ function Graph(options){
     //there are two available camera modes: "focus point" and "free camera"
     window.graph.cameraMode = "free camera";
     
-    posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
+    window.graph.posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
     
     var initializationObject = 
     [  
@@ -448,7 +457,7 @@ function Graph(options){
     scene.addColourPoint(new ColourPoint(new Vector(this.centroid.getX(), this.centroid.getY(), this.centroid.getZ()), "#00ff00"))
     
     this.scene = scene;
-    window.renderer = new Renderer(window.graph.camera, this.scene, canvas, context);
+    window.renderer = new Renderer(window.graph.camera, this.scene, window.graph.canvas, context);
   
     document.onkeypress = getKeyPress;
 
@@ -465,14 +474,22 @@ function Graph(options){
       window.graph.camera.focus(window.graph.focusPoint);
     }
 
-    posts.stickyMessage("centroid:" + this.centroid.getX() + ',' + this.centroid.getY() + ',' + this.centroid.getZ(), "centroid");
+    window.graph.posts.stickyMessage("centroid:" + this.centroid.getX() + ',' + this.centroid.getY() + ',' + this.centroid.getZ(), "centroid");
     window.renderer.renderScene();
   }
   
   function setCameraMode(cameraMode){
     window.graph.cameraMode = cameraMode;
-    posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
+    window.graph.posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
   }
   
-  this.init();
+  this.displayOnBodyLoad = function(){
+    var oldOnloadFunction = window.onload;
+    window.onload = function(){
+      if (oldOnloadFunction != null  && oldOnloadFunction != undefined){
+        oldOnloadFunction();
+      }
+      this.init();
+    }.bind(this);//set this to the graph object being created
+  }
 }
