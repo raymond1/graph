@@ -1,5 +1,13 @@
+//alert('programming.js');
+
 function Programming(){
 }
+
+Programming.nothing = function(object){
+  if (object == null||object == undefined) return true;
+  else return false;
+}
+
 
 Programming.iterateListThroughRange = function(list,startIndex,endIndex, passedInFunction){
   for (var i = startIndex; i <= endIndex; i++){
@@ -12,16 +20,6 @@ Programming.iterateThroughList = function(_array, _function){
     _function(_array[i]);
   }
 }
-
-//stopCondition is the only required parameter
-//Programming.iterateUntil = function(getIndexThroughLinearSearch,stopCondition, functionToPerform, input, output){
-//}
-
-
-//Same thing as a function, but with different syntax
-//Programming.procedure(thingToDo, input,output){
-//}
-
 
 Programming.getIndexThroughLinearSearch = function(stopCondition, inputArray){
   for (var i = 0; i < inputArray.length; i++){
@@ -53,4 +51,16 @@ Programming.getIndexOfMax = function(_numericArray){
     }
   }
   return workingMaxIndex;
+}
+
+//JavaScript specific
+
+//returns a new function that calls the old function before calling the new function
+Programming.addFunctionToChain = function (newFunction, oldFunction){
+  return function(){
+    if (!Programming.nothing(oldFunction)){
+      oldFunction();
+    }
+    newFunction();
+  }
 }

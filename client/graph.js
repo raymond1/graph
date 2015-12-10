@@ -41,7 +41,7 @@ function Graph(options){
     parentElement.insertBefore(elementToInsert, targetLocation.nextSibling);
   }
   
-  function generateButtons(_initializationObject){
+  this.generateButtons = function (_initializationObject){
     var canvasParent = window.graph.canvas.parentNode;
     var previouslyInsertedElement = null;
     for (var i = 0; i < _initializationObject.length; i++){
@@ -57,12 +57,6 @@ function Graph(options){
       newButton.appendChild(labelText);
       newButton.setAttribute("style", "float: left; clear: both;");
 
-      //add a hotkey if it is available
-      if (_initializationObject[i][3] != null){
-        window.graph.hotkeyFunctionMap[_hotkey] = _function;
-        labelText.nodeValue += " (" + _hotkey +")";
-      }
-      
       if (previouslyInsertedElement == null){
         insertAfter(newButton, window.graph.canvas);
       }
@@ -72,6 +66,15 @@ function Graph(options){
 
       previouslyInsertedElement = newButton;
     }
+  }
+
+  this.generateHotKeys = function(_initializationObject){
+      //add a hotkey if it is available
+      if (_initializationObject[i][3] != null){
+        window.graph.hotkeyFunctionMap[_hotkey] = _function;
+        labelText.nodeValue += " (" + _hotkey +")";
+      }
+      
   }
 
   function generatePoint(){
@@ -370,7 +373,7 @@ function Graph(options){
 
 
 
-  this.init = function(){
+  this.initAndDisplay = function(){
     var canvasWrapper = document.createElement("div");
     var canvas = document.createElement('canvas');
     var body = document.getElementsByTagName('body')[0];
@@ -423,7 +426,7 @@ function Graph(options){
     ];
 
     
-    generateButtons(initializationObject);
+    this.generateButtons(initializationObject);
     this.datapoints = generateExponentialPoints();
     
     this.highestDatapoint = getHighestDatapoint(this.datapoints);
@@ -484,12 +487,15 @@ function Graph(options){
   }
   
   this.displayOnBodyLoad = function(){
+    window.onload = Programming.addFunctionToChain(this.initAndDisplay.bind(this), window.onload);
+/*
     var oldOnloadFunction = window.onload;
     window.onload = function(){
       if (oldOnloadFunction != null  && oldOnloadFunction != undefined){
         oldOnloadFunction();
       }
-      this.init();
+      this.initAndDisplay();
     }.bind(this);//set this to the graph object being created
+*/
   }
 }
