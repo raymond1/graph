@@ -1,8 +1,29 @@
 //properties:
 //var graph = new Graph();
 //graph.centroid = Vector(x,y,z)
+
 function Graph(options){
   this.objectType = "Graph";
+
+  Programming.addCommandQueueCapability(this);
+  Programming.addProcessCommandQueueCapability("graph", this);
+
+  this.addCommandToQueue = Programming.getAddCommandToQueueFunction(['display']);
+
+  this.processCommandQueue =
+    function(){
+      for (var i = 0; i < this.commandQueue.queue.length; i++){
+        var currentCommand = this.commandQueue.queue[i];
+        switch(currentCommand.commandString){
+          case 'display':
+            this.initAndDisplay();
+            break;
+          default:
+        }
+      }
+    }.bind(this);
+
+
   if (options == null){
     options = {};
   }
@@ -388,7 +409,7 @@ function Graph(options){
 
     var angleStep = 10;
 
-    window.graph = new Object;
+    if (Programming.nothing(window.graph)) window.graph = new Object;
     window.graph.posts = new Posts(canvas);
     window.graph.posts.attach(canvasWrapper);
     window.graph.disableMessages = false;    
@@ -484,18 +505,5 @@ function Graph(options){
   function setCameraMode(cameraMode){
     window.graph.cameraMode = cameraMode;
     window.graph.posts.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
-  }
-  
-  this.displayOnBodyLoad = function(){
-    window.onload = Programming.addFunctionToChain(this.initAndDisplay.bind(this), window.onload);
-/*
-    var oldOnloadFunction = window.onload;
-    window.onload = function(){
-      if (oldOnloadFunction != null  && oldOnloadFunction != undefined){
-        oldOnloadFunction();
-      }
-      this.initAndDisplay();
-    }.bind(this);//set this to the graph object being created
-*/
   }
 }

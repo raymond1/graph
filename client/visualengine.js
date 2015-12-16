@@ -63,6 +63,66 @@ Programming.addFunctionToChain = function (newFunction, oldFunction){
   }
 }
 
+Programming.stringInList = function (string, list){
+  for (var i = 0; i < list.length; i++){
+    if (string == list[i]) return true;
+  }
+  return false;
+}
+
+//pass in a list of commands that can be processed
+//return a function that checks if a given command is in that list before adding it to the command queue
+Programming.getAddCommandToQueueFunction = function(commandList){
+  var addCommandToQueue = function (commandString){
+    if (Programming.stringInList(commandString, commandList)){
+      var newCommand = new Command(commandString);
+      this.commandQueue.add(newCommand);
+    }
+    return newCommand;
+  }
+  return addCommandToQueue;
+}
+
+Programming.addCommandQueueCapability = function(object) {
+  object.commandQueue = new CommandQueue();
+/*  object.addCommandToQueue = function (commandString){
+    if (commandString == 'open' || commandString == 'generateOpenButton'){
+      var newCommand = new Command(commandString);
+      this.commandQueue.add(newCommand);
+    }
+    return newCommand;
+  }*/
+  object.addCommandToQueue = Programming.getAddCommandToQueueFunction(['open', 'generateOpenButton']);
+
+  //goes through the command queue and executes the commands contained within
+  object.processCommandQueue =
+  function(){
+    for (var i = 0; i < this.commandQueue.queue.length; i++){
+      var currentCommand = this.commandQueue.queue[i];
+      switch(currentCommand.commandString){
+        case 'open':
+          break;
+        case 'generateOpenButton':
+          var idOfContainer = currentCommand.arguments[0];
+          this.generateOpenButton(idOfContainer);
+          break;
+        default:
+      }
+    }
+  }.bind(object);
+}
+          
+Programming.addProcessCommandQueueCapability = function(objectName, object){
+  var oldOnload = window.onload;
+
+  window[objectName] = object;
+  window.onload = function(){
+    if (oldOnload != null && oldOnload != undefined)
+      oldOnload();
+    window[objectName].processCommandQueue();
+  }
+}
+
 
 
 function Command(commandString){
@@ -96,48 +156,12 @@ function CommandQueue(){
 //this.addCommandToQueue('generateOpenButton');
 //this.addCommandToQueue('addArguments', command, array of arguments);
 
+
 function VisualEngine(){
+  this.objectType = "Visual Engine";
+  Programming.addCommandQueueCapability(this);
+  Programming.addProcessCommandQueueCapability("visualengine", this);
 
-  this.commandQueue = new CommandQueue();
-  //if commandString matches with a value from the api, then load it into the queue
-  //once the window has finished loading, the commands will be called one by one
-  this.addCommandToQueue = function (commandString){
-    if (commandString == 'open' || commandString == 'generateOpenButton'){
-      var newCommand = new Command(commandString);
-      this.commandQueue.add(newCommand);
-    }
-    return newCommand;
-  }
-
-
-  //goes through the command queue and executes the commands contained within
-  this.processCommandQueue = function(){
-    for (var i = 0; i < this.commandQueue.queue.length; i++){
-      var currentCommand = this.commandQueue.queue[i];
-      switch(currentCommand.commandString){
-        case 'open':
-          break;
-        case 'generateOpenButton':
-          var idOfContainer = currentCommand.arguments[0];
-          this.generateOpenButton(idOfContainer);
-          break;
-        default:
-      }
-    }
-  }.bind(this);
-
-  var boundProcessCommandQueue = function(){
-    this.processCommandQueue();
-  }.bind(this);
-
-  var oldOnload = window.onload;
-
-  window.onload = function(){
-    if (oldOnload != null && oldOnload != undefined)
-      oldOnload();
-
-    boundProcessCommandQueue();
-  }
 
   //opens up a new window
   //if object is null, then a new window is opened up
