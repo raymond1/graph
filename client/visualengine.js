@@ -1,6 +1,12 @@
 function Programming(){
 }
 
+//returns true if test is between lowerBound and upperBound
+Programming.between = function(test, lowerBound,upperBound){
+  if (test >= lowerBound && test <= upperBound) return true;
+  return false;
+}
+
 Programming.nothing = function(object){
   if (object == null||object == undefined) return true;
   else return false;
@@ -51,6 +57,24 @@ Programming.getIndexOfMax = function(_numericArray){
   return workingMaxIndex;
 }
 
+Programming.getIndexOfMin = function(_numericArray){
+  var workingMin = _numericArray[0];
+  var workingMinIndex = 0;
+  for (var i = 0; i < _numericArray.length; i++){
+    if (_numericArray[i] < workingMin){
+      workingMin = _numericArray[i];
+      workingMinIndex = i;
+    }
+  }
+  return workingMinIndex;
+}
+
+Programming.insertAfter = function(elementToInsert, targetLocation){
+  var parentElement = targetLocation.parentNode;
+  parentElement.insertBefore(elementToInsert, targetLocation.nextSibling);
+}
+
+
 //JavaScript specific
 
 //returns a new function that calls the old function before calling the new function
@@ -83,47 +107,21 @@ Programming.getAddCommandToQueueFunction = function(commandList){
   return addCommandToQueue;
 }
 
-Programming.addCommandQueueCapability = function(object) {
+//This will need to be changed in the future so that the user can enter in a list of commands and their respective actions
+Programming.addCommandQueueCapability = function(object, commandList, commandProcessor) {
   object.commandQueue = new CommandQueue();
-/*  object.addCommandToQueue = function (commandString){
-    if (commandString == 'open' || commandString == 'generateOpenButton'){
-      var newCommand = new Command(commandString);
-      this.commandQueue.add(newCommand);
-    }
-    return newCommand;
-  }*/
-  object.addCommandToQueue = Programming.getAddCommandToQueueFunction(['open', 'generateOpenButton']);
 
-  //goes through the command queue and executes the commands contained within
-  object.processCommandQueue =
-  function(){
-    for (var i = 0; i < this.commandQueue.queue.length; i++){
-      var currentCommand = this.commandQueue.queue[i];
-      switch(currentCommand.commandString){
-        case 'open':
-          break;
-        case 'generateOpenButton':
-          var idOfContainer = currentCommand.arguments[0];
-          this.generateOpenButton(idOfContainer);
-          break;
-        default:
-      }
-    }
-  }.bind(object);
+  //set up the list of allowed commands
+  var setupAllowedCommands = function(object, commandQueueProcessor){
+    object.addCommandToQueue = Programming.getAddCommandToQueueFunction(commandList);
+  };
+
+  setupAllowedCommands(object, commandList);
+
+
+  //processCommandQueue is the function that goes through the command queue and executes the commands contained within
+  object.processCommandQueue = commandProcessor.bind(object);
 }
-          
-Programming.addProcessCommandQueueCapability = function(objectName, object){
-  var oldOnload = window.onload;
-
-  window[objectName] = object;
-  window.onload = function(){
-    if (oldOnload != null && oldOnload != undefined)
-      oldOnload();
-    window[objectName].processCommandQueue();
-  }
-}
-
-
 
 function Command(commandString){
   this.arguments = [];
@@ -152,15 +150,31 @@ function CommandQueue(){
 
 //this.addCommandToQueue
 //this.addCommandToQueue('open') starts the visual engine
-//this.addCommandToQueue('  --returns a reference to the command
 //this.addCommandToQueue('generateOpenButton');
 //this.addCommandToQueue('addArguments', command, array of arguments);
 
 
 function VisualEngine(){
   this.objectType = "Visual Engine";
-  Programming.addCommandQueueCapability(this);
-  Programming.addProcessCommandQueueCapability("visualengine", this);
+
+  var commandList = ['open', 'generateOpenButton'];
+  var commandProcessor = function(){
+    for (var i = 0; i < this.commandQueue.queue.length; i++){
+      var currentCommand = this.commandQueue.queue[i];
+      switch(currentCommand.commandString){
+        case 'open':
+          break;
+        case 'generateOpenButton':
+          var idOfContainer = currentCommand.arguments[0];
+          this.generateOpenButton(idOfContainer);
+          break;
+        default:
+          break;
+      }
+    }
+  };
+
+  Programming.addCommandQueueCapability(this, commandList, commandProcessor);
 
 
   //opens up a new window
@@ -171,7 +185,7 @@ function VisualEngine(){
   this.open = function(){
     var newWindow;
     if (Programming.nothing(this.containerObject)){
-      newWindow = open("window.html", "asdf", "height=1000,width=1000,top=0,menubar=yes,toolbar=yes");
+      newWindow = open("window.html", "Visual Engine", "height=1000,width=1000,top=0,menubar=yes,toolbar=yes,scrollbars=1");
       if (newWindow == null){
       }
       else{
@@ -192,7 +206,6 @@ function VisualEngine(){
     }
     var boundOnClick = onClick.bind(this);
 
-    var parentElement2 = document.getElementById(id);
     var openButton = document.createElement('button');
     var openButtonText = document.createTextNode('Open Visual Engine');
     openButton.appendChild(openButtonText);
@@ -203,7 +216,7 @@ function VisualEngine(){
       openButton.attachEvent('onclick', boundOnClick);
     }
 
-    parentElement2.appendChild(openButton);
+    parentElement.appendChild(openButton);
   }
 }
 

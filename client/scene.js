@@ -15,7 +15,7 @@ function Scene(){
   }
   
   this.addLine = function(line){
-    
+    this.sceneObjects.push(line);
   }
   
   this.addTriangle = function(triangle){

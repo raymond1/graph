@@ -1,3 +1,65 @@
+function Orientation(xAxisVector, yAxisVector){
+  this.xAxis = xAxisVector;
+  this.yAxis = yAxisVector;
+}
+
+
+//a scene is composed of points, lines and surfaces
+
+function Scene(){
+  this.sceneObjects = [];
+  //adds a single colour point to the scene
+  this.addColourPoint = function(colourPoint){
+    this.sceneObjects.push(colourPoint);
+  }
+  
+  //adds multiple colour points to a scene
+  this.addMultipleColourPoints = function(colourPoints){
+    for (var i = 0; i < colourPoints.length; i++){
+      this.sceneObjects.push(colourPoints[i]);
+    }
+  }
+  
+  this.addLine = function(line){
+    this.sceneObjects.push(line);
+  }
+  
+  this.addTriangle = function(triangle){
+    this.sceneObjects.push(triangle);
+  }
+}
+
+function Colour(){
+}
+
+//takes in a number from 0 to 255, and returns the corresponding gray colour
+Colour.getNeutralString = function (grayNumber){
+  var singleChannelString = grayNumber.toString(16) + "";
+  if (singleChannelString.length < 2){
+    singleChannelString = "0" + singleChannelString;
+  }
+  
+  return "#" + singleChannelString + singleChannelString + singleChannelString;
+}
+
+Colour.maxColour = 255;
+Colour.maxGrayNumber = 255;
+Colour.numberOfGrays = 256;
+
+
+function ColourPoint(vector,colour){
+  this.objectType = "colour point";
+  this.vector = vector;
+  this.colour = colour;
+}
+
+function Line(pointA,pointB, colour){
+  this.objectType = 'line';
+  this.pointA = pointA;
+  this.pointB = pointB;
+  this.colour = colour;
+}
+
 function Renderer(camera, scene, canvas, context){
   this.objectType='Renderer';
   this.camera = camera;
@@ -13,9 +75,9 @@ function Renderer(camera, scene, canvas, context){
 
     //set up camera coordinate system
     var cameraCoordinateSystem = new CoordinateSystem();
-    cameraCoordinateSystem.axes.push(this.camera.xAxis);
-    cameraCoordinateSystem.axes.push(this.camera.yAxis);
-    var cameraZAxis = Vector.crossProduct(Vector.getUnitVector(this.camera.xAxis),Vector.getUnitVector(this.camera.yAxis));
+    cameraCoordinateSystem.axes.push(this.camera.orientation.xAxis);
+    cameraCoordinateSystem.axes.push(this.camera.orientation.yAxis);
+    var cameraZAxis = Vector.crossProduct(Vector.getUnitVector(this.camera.orientation.xAxis),Vector.getUnitVector(this.camera.orientation.yAxis));
     cameraCoordinateSystem.axes.push(cameraZAxis);
 
     //calculate CP
@@ -59,7 +121,8 @@ function Renderer(camera, scene, canvas, context){
     return false;
   }
 
-  //when a colour point is prerendered, it is put into a 3d space
+  //When a colour point is prerendered, it is put into a 3d space
+  //This function calculates 3d transformations so that things are viewed from the camera's perspective
   this.prerenderColourPoint = function(colourPoint){
     //A is colourPoint from the camera's point of view, without perspective
     var A = this.calculateVectorInCameraCoordinateSystem(colourPoint.vector);
@@ -77,16 +140,70 @@ function Renderer(camera, scene, canvas, context){
     var newColourPoint = new ColourPoint(D, colourPoint.colour);
     this.virtualGrid.insert(D.getX(),D.getY(), newColourPoint);
   }
+
+  //uses prerenderColourPoint to process spatial transformations
+  this.prerenderLine = function(line){
+    var start = line.pointA;
+    var end = line.pointB;
+
+    var deltaX = end.getX() - start.getX();
+    var deltaY = end.getY() - start.getY();
+    var deltaZ = end.getZ() - start.getZ();
+
+    var calculateNumberOfSteps = function(line){
+      var returnValue = 0;
+//opportunity for AI... Need alternative to variable names for accessing data
+      var absoluteValueOfDeltaX = Math.abs(line.pointB.getX() - line.pointA.getX());
+      var absoluteValueOfDeltaY = Math.abs(line.pointB.getY() - line.pointA.getY());
+
+
+      var absoluteValueOfDeltaZ = Math.abs(line.pointB.getZ() - line.pointA.getZ());
+
+      if (absoluteValueOfDeltaX >= absoluteValueOfDeltaY){
+        returnValue = absoluteValueOfDeltaX;
+      }else{
+        returnValue = absoluteValueOfDeltaY;
+      }
+
+      if (absoluteValueOfDeltaZ >= returnValue){
+        returnValue = absoluteValueOfDeltaZ;
+      }else{
+        
+      }
+      return returnValue;
+    }
+
+    //plot the first point, which is the start point
+    var newColourPoint = new ColourPoint(new Vector(start.getX(), start.getY(), start.getZ()),line.colour);
+    this.prerenderColourPoint(newColourPoint);
+
+    var numberOfSteps = calculateNumberOfSteps(line);
+    var denominator = numberOfSteps.toPrecision(5);
+    var incrementVector = new Vector(deltaX/denominator,deltaY/denominator,deltaZ/denominator);
+
+    for (var i = 1; i < numberOfSteps; i++){
+      var newVector = new Vector(line.pointA.getX(), line.pointA.getY(), line.pointA.getZ());
+      var newIncrementVector = Vector.scalarMultiply(i, incrementVector);
+      var vectorToAdd = Vector.add(newVector, newIncrementVector);
+      var colourPointToAdd = new ColourPoint(vectorToAdd,line.colour);
+      this.prerenderColourPoint(colourPointToAdd);
+    }
+  }
   
   this.renderScene = function(){
     this.clear();
 
-    
-    
     //render all of the colour points onto the virtual grid
     for (var i = 0; i < this.scene.sceneObjects.length; i++){
-      if (this.scene.sceneObjects[i].objectType == "colour point"){
-        this.prerenderColourPoint(this.scene.sceneObjects[i]);
+      switch(this.scene.sceneObjects[i].objectType){
+        case 'colour point':
+          this.prerenderColourPoint(this.scene.sceneObjects[i]);
+          break;
+        case 'line':
+          this.prerenderLine(this.scene.sceneObjects[i]);
+          break;
+        default:
+          break;
       }
     }
     //discard all colour points that are behind the camera
@@ -107,7 +224,8 @@ function Renderer(camera, scene, canvas, context){
 
     this.virtualGrid.iterate(translateAndDrawPixel);
     
-    window.graph.posts.stickyMessage("camera position:" + this.camera.position.getX() + ',' + this.camera.position.getY() + ',' + this.camera.position.getZ());
+    window.customDebugger.stickyMessage("camera position:" + this.camera.position.getX() + ',' + this.camera.position.getY() + ',' + this.camera.position.getZ(), 'camera position');
+    window.customDebugger.stickyMessage('camera orientation: x axis:' + this.camera.orientation.xAxis.getX() + ',' + this.camera.orientation.xAxis.getY() + ',' + this.camera.orientation.xAxis.getZ() + '| y axis:' + this.camera.orientation.yAxis.getX() + ',' + this.camera.orientation.yAxis.getY() + ',' + this.camera.orientation.yAxis.getZ(), 'camera orientation');
   }
 
   this.discardColourPointsOutsideViewport = function(){
@@ -161,9 +279,9 @@ function Renderer(camera, scene, canvas, context){
     //The position of P relative to C is called CP
 
     var cameraCoordinateSystem = new CoordinateSystem();
-    cameraCoordinateSystem.axes.push(this.xAxis);
-    cameraCoordinateSystem.axes.push(this.yAxis);
-    cameraCoordinateSystem.axes.push(Vector.crossProduct(this.xAxis,this.yAxis));
+    cameraCoordinateSystem.axes.push(this.orientation.xAxis);
+    cameraCoordinateSystem.axes.push(this.orientation.yAxis);
+    cameraCoordinateSystem.axes.push(Vector.crossProduct(this.orientation.xAxis,this.orientation.yAxis));
 
     //var projectionOfCPOnCameraXYPlane;
     for (var i = 0; i < datapoints.length; i++){

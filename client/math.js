@@ -1,6 +1,14 @@
 function MyMath(){
 }
 
+MyMath.min = function(a,b){
+  if (a <= b){
+    return a;
+  }
+
+  return b;
+}
+
 MyMath.square = function (a){
   return a * a;
 }
@@ -48,3 +56,4 @@ Range = function(lowerBound,upperBound){
     return upperBound - lowerBound + 1;
   }
 }
+

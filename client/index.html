@@ -11,8 +11,12 @@
   <script type='text/javascript' src='visualengine.js'></script>
   <script type='text/javascript'>
     var visualEngine = new VisualEngine();
+    
     var generateButtonCommand = visualEngine.addCommandToQueue('generateOpenButton');
+
     generateButtonCommand.addArgument('buttonContainer');
+
+    visualEngine.processCommandQueue();
   </script>
 </head>
 </html>

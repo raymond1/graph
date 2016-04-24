@@ -1,4 +1,5 @@
 function Vector(){
+  this.objectType = 'vector';
   this.elements = [];
   for (var i = 0; i < arguments.length; i++){
     this.elements.push(arguments[i]);
@@ -92,6 +93,7 @@ Vector.dotProduct = function(a,b){
 }
 
 //Takes in a vector a, and returns a vector b with the same dimensions as a, but with a different scale such that the magnitude of b is 1
+//How should this behave when the 0 vector is passed in?
 Vector.getUnitVector = function(a){
   var b = new Vector();
   var _magnitude = Vector.magnitude(a);
@@ -117,6 +119,9 @@ Vector.projection = function(vector1, vector2){
 }
 
 Vector.magnitude = function(_vector){
+if (_vector == undefined){
+  debugger;
+}
   var sum = 0;
   for (var i = 0; i < _vector.getLength(); i++){
     sum += MyMath.square(_vector.getElement(i));

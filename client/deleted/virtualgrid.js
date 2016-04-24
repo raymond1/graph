@@ -1,5 +1,3 @@
-//need to decide what the virtualgrid is made up of. Is it a set of colour points, or a set of points?
-
 //An x,y grid, where each x,y coordinate corresponds to a set of pixels with those x,y values.
 //For example: (2,3,5), (2,3,8) will both be in coordinate (2,3) in the virtual grid.
 function VirtualGrid(){
