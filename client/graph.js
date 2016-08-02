@@ -176,7 +176,7 @@ Logic.doAThenB = function(functionA,functionB){
 
 
 
-//Just an idea. The test probe will take in a set of inputs and outputs and measures an object to see if it meets the spec on a first order level.
+//Just an idea. The test probe will take in a set of inputs and outputs and measures an object to see if it meets the spec.
 function TestProbe(){
 }
 
@@ -569,16 +569,14 @@ function Mouse(element){//attaches events to element
 
 function Graph(options){
   this.objectType = "Graph";
-  this.wireframeScene = null; //points to a wireframe scene that will be displayed when the main scene is being rotated
-  this.wireframeCameraOrientation = null;
-  this.wireframeCamera = null;
+
 
   this.mainScene = null;
   this.mainSceneCamera = null;
   this.mainSceneCameraOrientation = null;
 
   this.debugArea = null;//area for debug messages
-  this.mode = 'main';//Valid modes include: 'main' and 'wireframe'.
+
 
   var commandProcessor = function(){
       for (var i = 0; i < this.commandQueue.queue.length; i++){
@@ -630,8 +628,9 @@ function Graph(options){
     return new Vector(averageX,averageY,averageZ);
   }
   
- 
+  //generating buttons should be separate from generating hotkeys, but this is something that may never be fully implemented
   this.generateButtons = function (_initializationObject){
+    window.graph.hotkeyFunctionMap = []
     var canvasParent = window.graph.canvas.parentNode;
     var br = document.createElement('br');
     Programming.insertAfter(br, window.graph.canvas);
@@ -645,30 +644,31 @@ function Graph(options){
 
       newButton.setAttribute("id", _buttonID);
       newButton.addEventListener("click", _function);
+
+
       var labelText = document.createTextNode(_label);
+      if (_initializationObject[i][3] != null){
+        window.graph.hotkeyFunctionMap[_hotkey] = _function
+        labelText.nodeValue += " (" + _hotkey +")";
+      }
       newButton.appendChild(labelText);
       newButton.setAttribute("style", "");
 
       Programming.insertAfter(newButton, previouslyInsertedElement);
 
       previouslyInsertedElement = newButton;
+
+
+
     }
 
   }
 
-  this.generateHotKeys = function(_initializationObject){
-      //add a hotkey if it is available
-      if (_initializationObject[i][3] != null){
-        window.graph.hotkeyFunctionMap[_hotkey] = _function;
-        labelText.nodeValue += " (" + _hotkey +")";
-      }
-      
-  }
 
   function generatePoint(){
-    var datapoints = [];
-    datapoints.push(new Vector(0,0,120));
-    return datapoints;
+    var datapoints = []
+    datapoints.push(new Vector(0,0,120))
+    return datapoints
   }
   
   function generateSquareCorners(){
@@ -755,19 +755,19 @@ function Graph(options){
   //
   //rotates the camera's position
   function rotateCameraLeftAroundFocusPoint(){
-    rotateCameraAroundFocusPoint(1, new Vector(0,1,0), window.graph.focusPoint, window.graph.mainModeCamera);
+    rotateCameraAroundFocusPoint(1, new Vector(0,1,0), window.graph.focusPoint, window.graph.camera);
   }
 
   function rotateCameraRightAroundFocusPoint(){
-    rotateCameraAroundFocusPoint(-1, new Vector(0,1,0), window.graph.focusPoint, window.graph.mainModeCamera);
+    rotateCameraAroundFocusPoint(-1, new Vector(0,1,0), window.graph.focusPoint, window.graph.camera);
   }
 
   function rotateCameraUpAroundFocusPoint(){
-    rotateCameraAroundFocusPoint(1, new Vector(1,0,0), window.graph.focusPoint, window.graph.mainModeCamera);
+    rotateCameraAroundFocusPoint(1, new Vector(1,0,0), window.graph.focusPoint, window.graph.camera);
   }
 
   function rotateCameraDownAroundFocusPoint(){
-    rotateCameraAroundFocusPoint(-1, new Vector(1,0,0), window.graph.focusPoint, window.graph.mainModeCamera);
+    rotateCameraAroundFocusPoint(-1, new Vector(1,0,0), window.graph.focusPoint, window.graph.camera);
   }
   
   function render(){
@@ -783,7 +783,8 @@ function Graph(options){
   }
   
   function panLeft(){
-    Logic.doAThenB(panLeftHead, render);
+    panLeftHead()
+    render()
   }
 
   function _panRight(){
@@ -795,7 +796,8 @@ function Graph(options){
   }
   
   function panRight(){
-    Logic.doAThenB(panRightHead, render);
+    panRightHead()
+    render()
   }
 
   function _panUp(){
@@ -881,7 +883,7 @@ function Graph(options){
   }
 
   function increaseMagnification(){
-    window.graph.renderer.camera.magnification *= 1.1;
+    window.graph.renderer.camera.magnification *= 2;
     window.graph.renderer.renderScene();
   }
   
@@ -900,22 +902,6 @@ function Graph(options){
         var y = Math.log(Math.pow(x, z/x));
         datapoints.push(new Vector(x,y,z));
       }
-    }
-    return datapoints;
-  }
-
-  this.generateRotationWireframePoints = function(){
-    var datapoints = [];
-    for (var i = 0; i < 20; i++){
-      datapoints.push(new Vector(0,0,i));
-    }
-
-    for (var i = 0; i < 20; i++){
-      datapoints.push(new Vector(0,i,0));
-    }
-
-    for (var i = 0; i < 20; i++){
-      datapoints.push(new Vector(i,0,0));
     }
     return datapoints;
   }
@@ -953,11 +939,11 @@ function Graph(options){
     var evtobj=window.event? event : e;
     var unicode=evtobj.charCode? evtobj.charCode : evtobj.keyCode;
     var key=String.fromCharCode(unicode)
-/*
+
     if (window.graph.hotkeyFunctionMap[key] != null){
       window.graph.hotkeyFunctionMap[key]();
     }
-*/
+
 
     if (key=='p') window.graph.customDebugger.disableMessages = !window.graph.customDebugger.disableMessages;
     //0 key activates the debugging messages
@@ -976,31 +962,6 @@ function Graph(options){
     this.renderer.renderScene();
   }
 
-  //switches between the main scene and the wireframe scene
-  this.switchMode = function(mode){
-    this.mode = mode;
-    switch(mode){
-      case 'wireframe':
-        this.wireframeCamera.position = new Vector(0,0,-200);
-        this.wireframeCamera.orientation = new Orientation(new Vector(1,0,0), new Vector(0,1,0));
-//        this.wireframeScene.camera = this.wireframeCamera;
-        this.renderer.scene = this.wireframeScene;
-        this.renderer.camera = this.wireframeCamera;
-        break;
-      case 'main':
-        this.renderer.scene = this.mainScene;
-        this.renderer.camera = this.mainModeCamera;
-        break;
-      default:
-        alert('test');
-        break;
-    }
-    this.renderer.renderScene();
-  }
-
-
-  this.wireframeDistanceFromStarToCamera = 200;
-
   //distance moved by mouse is the angle to rotate in radians
   this.calculateDragRotationAngle = function(mouseDragDistance, focusPointDistance){
     return Math.atan(mouseDragDistance/focusPointDistance) * 180 / Math.PI * 2;
@@ -1009,78 +970,36 @@ function Graph(options){
   this.setupMouse = function(){
     this.mouse = new Mouse(this.canvas);
 
-    var wireframeDragEndAction = function(){
+    var dragEndAction = function(){
       var zCrossDragging = Vector.crossProduct(new Vector(0,0,1), new Vector(this.mouse.draggingVector.x, -this.mouse.draggingVector.y, 0));
-      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), this.wireframeDistanceFromStarToCamera);
+      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), Vector.distance(this.focusPoint, this.camera.position));
       if (Vector.magnitude(zCrossDragging) == 0){ //When mouse is in same spot it started in, zCrossDragging becomes the 0 vector
         zCrossDragging = new Vector(1,0,0); //arbitrary in case of rotation by 0 degrees
       }
       var axisOfRotation = Vector.getUnitVector(zCrossDragging);
-      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, this.focusPoint, this.mainModeCamera);
-
-      this.switchMode('main');
-      this.renderer.renderScene();
-    }.bind(this);
-
-    var noWireframeDragEndAction = function(){
-      var zCrossDragging = Vector.crossProduct(new Vector(0,0,1), new Vector(this.mouse.draggingVector.x, -this.mouse.draggingVector.y, 0));
-      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), Vector.distance(this.focusPoint, this.mainModeCamera.position));
-      if (Vector.magnitude(zCrossDragging) == 0){ //When mouse is in same spot it started in, zCrossDragging becomes the 0 vector
-        zCrossDragging = new Vector(1,0,0); //arbitrary in case of rotation by 0 degrees
-      }
-      var axisOfRotation = Vector.getUnitVector(zCrossDragging);
-      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, this.focusPoint, this.mainModeCamera);
+      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, this.focusPoint, this.camera);
 
       this.renderer.renderScene();
     }.bind(this);
 
 
-    var wireframeButtonDownAction = function(){
-      this.wireframeModeRotationAngle = 0;
-      this.switchMode('wireframe');
-    }.bind(this);
-
-    var noWireframeButtonDownAction = function(){
-    }.bind(this);
-
-
-    var wireframeDragFunction = function(){
-      this.wireframeCamera.position = new Vector(0,0,-this.wireframeDistanceFromStarToCamera);
-      this.wireframeCamera.orientation = new Orientation(new Vector(1,0,0), new Vector(0,1,0));
-
+    var draggingAction = function(){
       var zCrossDragging = Vector.crossProduct(new Vector(0,0,1), new Vector(this.mouse.draggingVector.x, this.mouse.draggingVector.y, 0));
-      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), this.wireframeDistanceFromStarToCamera);
+      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), Vector.distance(this.focusPoint, this.camera.position));
+
+
       if (Vector.magnitude(zCrossDragging) == 0){ //When mouse is in same spot it started in, zCrossDragging becomes the 0 vector
         zCrossDragging = new Vector(1,0,0); //arbitrary in case of rotation by 0 degrees
       }
       var axisOfRotation = Vector.getUnitVector(zCrossDragging);
-      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, new Vector(0,0,0), this.wireframeCamera);
+      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, this.focusPoint, this.camera);
 
       this.renderer.renderScene();
 
     }.bind(this);
 
-    var noWireframeDragFunction = function(){
-      var zCrossDragging = Vector.crossProduct(new Vector(0,0,1), new Vector(this.mouse.draggingVector.x, this.mouse.draggingVector.y, 0));
-      var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(zCrossDragging), Vector.distance(this.focusPoint, this.mainModeCamera.position));
-      if (Vector.magnitude(zCrossDragging) == 0){ //When mouse is in same spot it started in, zCrossDragging becomes the 0 vector
-        zCrossDragging = new Vector(1,0,0); //arbitrary in case of rotation by 0 degrees
-      }
-      var axisOfRotation = Vector.getUnitVector(zCrossDragging);
-      rotateCameraAroundFocusPoint(angleToRotate, axisOfRotation, this.focusPoint, this.mainModeCamera);
-
-      this.renderer.renderScene();
-
-    }.bind(this);
-
-    this.mouse.setAction("drag end", wireframeDragEndAction);
-    this.mouse.setAction('button down', wireframeButtonDownAction);
-    this.mouse.setAction('drag', wireframeDragFunction);
-
-    this.mouse.setAction('button up', function(){
-      this.switchMode('main');
-    }.bind(this));
-
+    this.mouse.setAction("drag end", dragEndAction);
+    this.mouse.setAction('drag', draggingAction);
 
     this.mouse.updateBoundingClientRect(this.canvas);
   }
@@ -1115,7 +1034,7 @@ function Graph(options){
 
   this.setupRenderer = function(){
     this.context = this.canvas.getContext("2d");
-    this.mainModeCamera = new Camera(new Vector(0,0,0));
+    this.camera = new Camera(new Vector(0,0,0));
 
     //there are two available camera modes: "focus point" and "free camera"
     this.cameraMode = "free camera";
@@ -1144,26 +1063,11 @@ function Graph(options){
     this.scene = scene;
     this.mainScene = scene;
 
-    this.renderer = new Renderer(this.mainModeCamera, this.scene, this.canvas, this.context);
+    this.renderer = new Renderer(this.camera, this.scene, this.canvas, this.context);
   }
-
-  this.setupRotationWireframe = function(){
-    var wireframeScene = new Scene();
-    wireframeScene.addLine(new Line(new Vector(-50,50,0), new Vector(50,50,0), '#0000ff'));
-    wireframeScene.addLine(new Line(new Vector(50,50,0), new Vector(50,-50,0), '#00ff00'));
-    wireframeScene.addLine(new Line(new Vector(50,-50,0), new Vector(-50,-50,0), '#00ffff'));
-    wireframeScene.addLine(new Line(new Vector(-50,-50,0), new Vector(-50,50,0), '#ff00ff'));
-    wireframeScene.addLine(new Line(new Vector(0,0,0), new Vector(0,0,50), '#ffff00'));
-    wireframeScene.addLine(new Line(new Vector(0,0,0), new Vector(0,0,-50), '#ffffff'));
-    this.wireframeScene = wireframeScene;
-
-    var wireframeCameraOrientation = new Orientation(new Vector(1,0,0), new Vector(0,1,0));
-    this.wireframeCamera = new Camera(new Vector(0,0,-200), wireframeCameraOrientation);
-  }
-
 
   this.setupDatapoints = function(){
-    this.datapoints = generateExponentialPoints();
+    this.datapoints = generateExponentialPoints()
   }
 
   this.calculateAttributes = function(){
@@ -1178,7 +1082,6 @@ function Graph(options){
   }
 
   this.setupKeyboard = function(){
-    //this.hotkeyFunctionMap = new Object; //do not delete
     document.onkeypress = getKeyPress;
   }
 
@@ -1196,8 +1099,8 @@ function Graph(options){
 
     //initial camera location for focus point
     if (this.cameraMode == "focus point"){
-      this.mainModeCamera.position = new Vector(0,0,2 * this.graphRadius);
-      this.mainModeCamera.focus(this.focusPoint);
+      this.camera.position = new Vector(0,0,2 * this.graphRadius);
+      this.camera.focus(this.focusPoint);
     }
 
     if (this.debuggingEnabled){
@@ -1219,11 +1122,7 @@ function Graph(options){
     this.setupKeyboard();    
     this.setupCamera();
     this.setupConstants();
-    this.setupRotationWireframe();
     this.setupDebuggingSystem();
-
-
-//    window.graph.customDebugger.stickyMessage("Camera Mode: " + window.graph.cameraMode, "camera mode");
 
     var initializationObject = 
     [  
@@ -1251,8 +1150,6 @@ function Graph(options){
 
     
     this.generateButtons(initializationObject);
-
-  
 
     this.initialized = true;
   }
