@@ -395,6 +395,7 @@ Vector.copy = function(vector){
   return newVector;
 }
 
+//returns a value in radians
 Vector.angleBetween = function(vector1,vector2){
   return Math.acos(Vector.dotProduct(vector1,vector2)/(Vector.magnitude(vector1)*Vector.magnitude(vector2)));
 }
@@ -440,4 +441,14 @@ Vector.isNull = function(A){
     if (A.elements[i] != 0) return false;
   }
   return true;
+}
+
+Vector.toString = function(A){
+  var returnString = '('
+  for (var i = 0; i < A.elements.length; i++){
+    returnString += A.elements[i] + ','
+  }
+  returnString = returnString.slice(0, -1)
+  returnString += ')'
+  return returnString
 }

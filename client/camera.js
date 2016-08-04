@@ -4,18 +4,32 @@
 //camera.focalLength: number
 
 //yes... this is now a 3d camera instead of an n-dimensional camera
-function Camera(positionVector, orientation){
+function Camera(positionVector, orientation, focalLength, magnification){
   if (positionVector == null){
     positionVector = new Vector(0,0,0);
   }
   this.position = new Vector(positionVector.getX(), positionVector.getY(), positionVector.getZ());
 
-  this.focalLength = 1000;
-  this.magnification = 1;
-  this.orientation = new Orientation(new Vector(1,0,0), new Vector(0,1,0));
-  if (orientation != null){
-    this.orientation.xAxis = orientation.xAxis;
-    this.orientation.yAxis = orientation.yAxis;
+  if (focalLength == null || focalLength == undefined){
+    this.focalLength = 1000;
+  }
+  else{
+    this.focalLength = focalLength
+  }
+
+  if (magnification == null || magnification == undefined){
+    this.magnification = 1;
+  }
+  else{
+    this.magnification = magnification
+  }
+
+
+  if (orientation == undefined || orientation == null){
+    this.orientation = new Orientation(new Vector(1,0,0), new Vector(0,1,0))
+  }
+  else{
+    this.orientation = new Orientation(orientation.xAxis, orientation.yAxis)
   }
 
   this.getZAxis = function(){
@@ -181,5 +195,9 @@ function Camera(positionVector, orientation){
   
   this.moveTo = function(point){
     this.position = Vector.copy(point);
+  }
+
+  this.clone = function(){
+    return new Camera(this.position, this.orientation, this.focalLength, this.magnification)
   }
 }

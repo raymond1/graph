@@ -1,9 +1,3 @@
-function Orientation(xAxisVector, yAxisVector){
-  this.xAxis = xAxisVector;
-  this.yAxis = yAxisVector;
-}
-
-
 //a scene is composed of points, lines and surfaces
 
 function Scene(){
