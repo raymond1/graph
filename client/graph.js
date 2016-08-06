@@ -511,7 +511,10 @@ function Graph(options){
   //                            ,,,,,,,,,,,,,,
   //                                ,,,,,,
   
-
+  //Coordinates in this piece of code are not for the objects inside the scene. They are relative to only the mouse coordinate system, with positive z being into the page
+  //Let A be the point where the user clicks down
+  //Let B be the point where the mouse currently is after some dragging
+  //Let C be the centre of the rotational sphere located at (width/2, height/2, 0)
   var dragAction = function(){
 
     //calculated assuming the focus point is in the middle of the display area
@@ -523,24 +526,34 @@ function Graph(options){
       return Math.sqrt(Math.pow(sphereRadius,2) - Math.pow(x-centrepointX,2) - Math.pow(y-centrepointY,2))
     }
 
-    var displayAreaMidpointX = this.canvas.width/2
-    var displayAreaMidpointY = this.canvas.height/2
+    var A = new Vector(this.mouse.buttonDownPosition.x, this.mouse.buttonDownPosition.y, 0)
 
-    //sphereInitialZ is the height on a theoretical sphere centred on the display area when the user first clicks on the mouse
-    var sphereInitialZ = getRotationalSphereHeight(this.canvas.width, this.canvas.height, this.mouse.buttonDownPosition.x,this.mouse.buttonDownPosition.y)
-    var dragBeginVector = new Vector(this.mouse.buttonDownPosition.x - displayAreaMidpointX ,this.mouse.buttonDownPosition.y - displayAreaMidpointY, sphereInitialZ)
+    //sphereHeightAPrime is the height on a theoretical sphere centred on the display area when the user first clicks on the mouse
+    var sphereHeightAPrime = getRotationalSphereHeight(this.canvas.width, this.canvas.height, A.getX(),A.getY())
 
-this.customDebugger.stickyMessage('dragBeginVector ' + Vector.toString(dragBeginVector), 'dragBeginVector')
-    //sphereFinalz is the height of the theoretical sphere after the user has done a bit of dragging
-    var sphereFinalZ = getRotationalSphereHeight(this.canvas.width, this.canvas.height, this.mouse.buttonDownPosition.x + this.mouse.draggingVector.x,this.mouse.buttonDownPosition.y + this.mouse.draggingVector.y )
-    var dragEndVector = new Vector(dragBeginVector.getX() + this.mouse.draggingVector.x - displayAreaMidpointX, dragBeginVector.getY() + this.mouse.draggingVector.y - displayAreaMidpointY, sphereFinalZ)
-this.customDebugger.stickyMessage('dragEndVector ' + Vector.toString(dragEndVector), 'dragEndVector')
+    var C = new Vector(this.canvas.width/2, this.canvas.height/2, 0) //The centre of the sphere, in mouse space
+    var APrime = new Vector(A.getX()- C.getX(), A.getY()-C.getY(), sphereHeightAPrime)//vector from C to A, but with a z value that depends on the location of A relative to the centre C
+
+
+
+
+this.customDebugger.stickyMessage('APrime ' + Vector.toString(APrime), 'APrime')
+
+    var B = new Vector(A.getX() + this.mouse.draggingVector.x, A.getY() + this.mouse.draggingVector.y, 0)
+
+    //sphereHeightB is the height of B on the theoretical sphere
+    var sphereHeightBPrime = getRotationalSphereHeight(this.canvas.width, this.canvas.height, B.getX(), B.getY())
+
+    var BPrime = new Vector(B.getX() - C.getX(), B.getY() - C.getY(), sphereHeightBPrime)
+
+
+this.customDebugger.stickyMessage('BPrime' + Vector.toString(BPrime), 'BPrime')
 
 
     //The axis of rotation will be the cross product of the dragging vector with the z axis(out of the page)
     //var axisOfRotation = Vector.getUnitVector(Vector.crossProduct(new Vector(0,0,1), new Vector(this.mouse.draggingVector.x, this.mouse.draggingVector.y, 0)))
 
-    var axisOfRotation = Vector.getUnitVector(Vector.crossProduct(dragBeginVector, dragEndVector))
+    var axisOfRotation = Vector.getUnitVector(Vector.crossProduct(APrime, BPrime))
 this.customDebugger.stickyMessage('axisOfRotation ' + Vector.toString(axisOfRotation), 'axisOfRotation')
 
     if (Vector.magnitude(axisOfRotation) == 0){ //When mouse is in same spot it started in, axisOfRotation becomes the 0 vector
@@ -551,7 +564,7 @@ this.customDebugger.stickyMessage('axisOfRotation ' + Vector.toString(axisOfRota
     //The number of degrees to rotate around the axis of rotation
 //    var draggingVectorAsVector = new Vector(this.mouse.draggingVector.x,this.mouse.draggingVector.y, 0)
 //    var angleToRotate = this.calculateDragRotationAngle(Vector.magnitude(draggingVectorAsVector), 10)
-    var angleToRotate = Vector.angleBetween(dragBeginVector, dragEndVector) * (180/Math.PI) * 3
+    var angleToRotate = Vector.angleBetween(APrime, BPrime) * (180/Math.PI) * 3
 this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRotate')
 
 
@@ -575,6 +588,7 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
     this.mouse.setAction('drag start', dragStartAction);
     this.mouse.setAction('drag', dragAction);
 
+    //updates the size of the bounding element for the display area where the mouse is active
     this.mouse.updateBoundingClientRect(this.canvas);
   }
 
@@ -607,14 +621,14 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
   }
 
   this.setupRenderer = function(){
-    this.context = this.canvas.getContext("2d");
-    this.camera = new Camera(new Vector(0,0,0));
+    this.context = this.canvas.getContext("2d")
+    this.camera = new Camera(new Vector(0,0,0))
 
     //there are two available camera modes: "focus point" and "free camera"
-    this.cameraMode = "free camera";
+    this.cameraMode = "focus point"
 
 
-    var scene = new Scene();
+    var scene = new Scene()
 
     for (var i = 0; i < this.datapoints.length; i++){
       var colourString;
@@ -632,6 +646,7 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
       scene.addColourPoint(colourPoint);
     }
 
+    //Adds the centroid point to the scene
     scene.addColourPoint(new ColourPoint(new Vector(this.centroid.getX(), this.centroid.getY(), this.centroid.getZ()), "#00ff00"))
     
     this.scene = scene;
@@ -644,7 +659,7 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
     this.datapoints = generateCircle()//generateExponentialPoints()
   }
 
-  this.calculateAttributes = function(){
+  this.calculateGraphAttributes = function(){
     this.highestDatapoint = getHighestDatapoint(this.datapoints);
     this.lowestDatapoint = getLowestDatapoint(this.datapoints);
     this.height = this.highestDatapoint.getZ() - this.lowestDatapoint.getZ();
@@ -667,14 +682,13 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
       setCameraMode("focus point");
     }
 
-    if (this.debuggingEnabled){
-      this.customDebugger.stickyMessage("Camera Mode: " + this.cameraMode, "camera mode");
-    }
-
     //initial camera location for focus point
     if (this.cameraMode == "focus point"){
+this.customDebugger.stickyMessage("graphRadius:" + this.graphRadius, "graphRadius");
       this.camera.position = new Vector(0,0,2 * this.graphRadius);
+this.customDebugger.stickyMessage("this.camera.position before focus:" + this.camera.position.toString(), "camera position before focus");
       this.camera.focus(this.focusPoint);
+this.customDebugger.stickyMessage("this.camera.position after focus:" + this.camera.position.toString(), "camera position after focus");
     }
 
     if (this.debuggingEnabled){
@@ -692,7 +706,7 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
     this.setupMouse();
     this.setupDebuggingSystem();
     this.setupDatapoints();
-    this.calculateAttributes();
+    this.calculateGraphAttributes();
     this.setupRenderer();
     this.setupKeyboard();    
     this.setupCamera();

@@ -4,6 +4,17 @@ function Vector(){
   for (var i = 0; i < arguments.length; i++){
     this.elements.push(arguments[i]);
   }
+
+  this.toString = function(){
+    var returnString = '('
+    for (var i = 0; i < this.elements.length; i++){
+      returnString += this.elements[i] + ','
+    }
+    returnString = returnString.slice(0, -1)
+    returnString += ')'
+    return returnString
+  }
+
   this.getX = function(){
     return this.elements[0];
   }
