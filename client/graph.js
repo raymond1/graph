@@ -185,6 +185,14 @@ function Graph(options){
       var x = Math.cos(angle * Math.PI/180) * radius;
       datapoints.push(new Vector(x,y,10));
     }
+
+    radius = 25
+    for (var angle = 0; angle < 180; angle = angle + 36){
+      var y = Math.sin(angle * Math.PI/180) * radius;
+      var x = Math.cos(angle * Math.PI/180) * radius;
+      datapoints.push(new Vector(x,y,10));
+    }
+
     return datapoints;
   }
 
@@ -656,7 +664,7 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
   }
 
   this.setupDatapoints = function(){
-    this.datapoints = generateCircle()//generateExponentialPoints()
+    this.datapoints = generateSquare()//generateCircle()//generateExponentialPoints()
   }
 
   this.calculateGraphAttributes = function(){
@@ -684,12 +692,10 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
 
     //initial camera location for focus point
     if (this.cameraMode == "focus point"){
-this.customDebugger.stickyMessage("graphRadius:" + this.graphRadius, "graphRadius");
       this.camera.position = new Vector(0,0,2 * this.graphRadius);
-this.customDebugger.stickyMessage("this.camera.position before focus:" + this.camera.position.toString(), "camera position before focus");
       this.camera.focus(this.focusPoint);
-this.customDebugger.stickyMessage("this.camera.position after focus:" + this.camera.position.toString(), "camera position after focus");
     }
+
 
     if (this.debuggingEnabled){
       this.customDebugger.stickyMessage("centroid:" + this.centroid.getX() + ',' + this.centroid.getY() + ',' + this.centroid.getZ(), "centroid");

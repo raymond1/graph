@@ -159,7 +159,7 @@ function Camera(positionVector, orientation, focalLength, magnification){
 
     var unitTargetZAxis = Vector.getUnitVector(targetZAxis);
     var unitCurrentZAxis = Vector.getUnitVector(currentZAxis);
-    
+
     //need to rotate the current Z axis vector so that it aligns with the target Z axis vector
     //the axis of rotation is the current axis vector cross producted with the target Z axis unit vector
     //There is an ambiguous case when the two vectors are collinear.
@@ -174,7 +174,7 @@ function Camera(positionVector, orientation, focalLength, magnification){
         //case 2:
         //when collinear and opposite directions, flip the orientation of the camera
         this.orientation.yAxis = Vector.getNegativeVector(this.orientation.yAxis);
-        this.orientation.xAxis = Vector.getNegativeVector(this.orientation.xAxis);
+
         return;
       }
     }
@@ -199,5 +199,11 @@ function Camera(positionVector, orientation, focalLength, magnification){
 
   this.clone = function(){
     return new Camera(this.position, this.orientation, this.focalLength, this.magnification)
+  }
+
+  this.toString = function(){
+    var returnString = ''
+    returnString += 'position:' + this.position.toString() + ' orientation: x axis:' + this.orientation.xAxis.toString() + 'y axis:' + this.orientation.yAxis.toString()
+    return returnString
   }
 }
