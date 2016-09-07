@@ -123,8 +123,8 @@ function Mouse(element){//attaches events to element
 
 
   this.updatePosition = function(eventInfo){
-    this.position.x = eventInfo.clientX - this.boundingClientRect.x;
-    this.position.y = eventInfo.clientY - this.boundingClientRect.y;
+    this.position.x = eventInfo.clientX - this.boundingClientRect.left;
+    this.position.y = eventInfo.clientY - this.boundingClientRect.top;
   };
 
   this.eventsDetected = {move: false, click: false, buttonUp: false, buttonDown: false, dragStart:false, drag: false, dragEnd: false};
@@ -141,7 +141,6 @@ function Mouse(element){//attaches events to element
 
   //when called with no arguments, simply update the sticky notes
   this.updateMouseStatus = function(attribute, argument){
-
     switch(attribute){
       case 'last move time':
         this.lastMoveTime = argument;
@@ -202,6 +201,7 @@ function Mouse(element){//attaches events to element
       this.customDebugger.stickyMessage("this.timeOfLastButtonUp: " + this.timeOfLastButtonUp, "time of last button up");
       this.customDebugger.stickyMessage("this.buttonState: " + this.buttonState, "Button state");
 */
+
       this.customDebugger.stickyMessage("this.position.xy:" + this.position.x + "," + this.position.y, "Mouse Coordinates");
       this.customDebugger.stickyMessage("this.boundingClientRect.xy:" + this.boundingClientRect.x + "," + this.boundingClientRect.y, "this.boundingClientRect.xy");
       this.customDebugger.stickyMessage("this.dragState: " + this.dragState, "this.dragState");
