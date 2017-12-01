@@ -15,7 +15,7 @@
     
     //pass in the id of the element where the open button will be generated... as a closure... yuck!
     var id = 'buttonContainer'
-    var generateOpenButton = new Command('generateOpenButton', function(){
+    var generateOpenButton = new Command('generate open button', function(){
       //id is the containing element id of the element where the open button will be generated.
       var parentElement = document.getElementById(id)
     
@@ -38,7 +38,7 @@
     }.bind(visualEngine))
 
     Programming.addCommandQueueCapability(visualEngine, [generateOpenButton])
-
+    visualEngine.addCommandToQueue('generate open button')
     visualEngine.processCommandQueue()
   </script>
 </head>

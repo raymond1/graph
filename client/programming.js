@@ -96,14 +96,20 @@ Programming.stringInList = function (string, list){
 
 //Running this on an object will give it the ability to process commands in a queue.
 Programming.addCommandQueueCapability = function(object, commands) {
-  object.commands = commands; //each object has a list of commands waiting to be processed
-  object.processCommandQueue = function(){
-    for (var i = 0; i < this.commands.length; i++){
-      this.commands[i].action() 
-    }
+  object.commands = []
+  for (var i = 0; i < commands.length; i++){
+    object.commands[commands[i].commandString] = commands[i] //commands is an array of Command objects. A command object maps a string command to an action(function)
   }
-  object.addCommandToQueue = function(command){
-    this.commands.push(command)
+  object.commandQueue = []  //commandQueue
+  object.processCommandQueue = function(){
+    var i
+    for (i = 0; i < this.commandQueue.length; i++){
+      this.commands[this.commandQueue[i]].action() 
+    }
+  }.bind(object)
+
+  object.addCommandToQueue = function(commandString){
+    this.commandQueue.push(commandString)
   }.bind(object)
 }
 
