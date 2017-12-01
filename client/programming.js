@@ -94,52 +94,21 @@ Programming.stringInList = function (string, list){
   return false;
 }
 
-//pass in a list of commands that can be processed
-//return a function that checks if a given command is in that list before adding it to the command queue
-Programming.getAddCommandToQueueFunction = function(commandList){
-  var addCommandToQueue = function (commandString){
-    if (Programming.stringInList(commandString, commandList)){
-      var newCommand = new Command(commandString);
-      this.commandQueue.add(newCommand);
+//Running this on an object will give it the ability to process commands in a queue.
+Programming.addCommandQueueCapability = function(object, commands) {
+  object.commands = commands; //each object has a list of commands waiting to be processed
+  object.processCommandQueue = function(){
+    for (var i = 0; i < this.commands.length; i++){
+      this.commands[i].action() 
     }
-    return newCommand;
   }
-  return addCommandToQueue;
+  object.addCommandToQueue = function(command){
+    this.commands.push(command)
+  }.bind(object)
 }
 
-//This will need to be changed in the future so that the user can enter in a list of commands and their respective actions
-Programming.addCommandQueueCapability = function(object, commandList, commandProcessor) {
-  object.commandQueue = new CommandQueue();
-
-  //set up the list of allowed commands
-  var setupAllowedCommands = function(object, commandQueueProcessor){
-    object.addCommandToQueue = Programming.getAddCommandToQueueFunction(commandList);
-  };
-
-  setupAllowedCommands(object, commandList);
-
-
-  //processCommandQueue is the function that goes through the command queue and executes the commands contained within
-  object.processCommandQueue = commandProcessor.bind(object);
-}
-
-
-
-function Command(commandString){
-  this.arguments = [];
-  this.argument = this.arguments;
-  this.commandString = commandString;
-  this.addArgument = function(argument){
-    this.arguments.push(argument);
-  }
-}
-
-function CommandQueue(){
-  this.queue = [];
-  this.length = 0;
-  this.add = function(command){
-    this.queue.push(command);
-    this.length++;
-  }
+function Command(commandString, action){
+  this.commandString = commandString
+  this.action = action
 }
 

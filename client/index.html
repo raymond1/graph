@@ -11,13 +11,35 @@
   <script type='text/javascript' src='programming.js'></script>
   <script type='text/javascript' src='visualengine.js'></script>
   <script type='text/javascript'>
-    var visualEngine = new VisualEngine();
+    var visualEngine = new VisualEngine()
     
-    var generateButtonCommand = visualEngine.addCommandToQueue('generateOpenButton');
+    //pass in the id of the element where the open button will be generated... as a closure... yuck!
+    var id = 'buttonContainer'
+    var generateOpenButton = new Command('generateOpenButton', function(){
+      //id is the containing element id of the element where the open button will be generated.
+      var parentElement = document.getElementById(id)
+    
+      var onClick = function(){
+        this.open()
+      }
+      var boundOnClick = onClick.bind(this)
 
-    generateButtonCommand.addArgument('buttonContainer');
+      var openButton = document.createElement('button')
+      var openButtonText = document.createTextNode('Open Visual Engine')
+      openButton.appendChild(openButtonText)
+    
+      if (openButton.addEventListener) {
+        openButton.addEventListener("click", boundOnClick, false)
+      } else {
+        openButton.attachEvent('onclick', boundOnClick)
+      }
 
-    visualEngine.processCommandQueue();
+      parentElement.appendChild(openButton)
+    }.bind(visualEngine))
+
+    Programming.addCommandQueueCapability(visualEngine, [generateOpenButton])
+
+    visualEngine.processCommandQueue()
   </script>
 </head>
 </html>

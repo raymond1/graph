@@ -78,26 +78,78 @@ function Graph(options){
 
   this.debugArea = null;//area for debug messages
 
+//This snippet is meant for documenting the commandProcessor function
+//Commands needed:
+//
+//set scene begin
+//  [many]
+//  set point
+//  end set point
+//
+//  [many]
+//  set line
+//  end set line
+//
+//  [many]
+//  set triangle
+//  end set triangle
+//
+//  [many]
+//  set mesh
+//  end set mesh
+//set scene end
+//
+//set number begin
+//  set 1
+//  set 0
+//set number end
+//
+//set 3-tuple begin
+//  set number begin
+//    set 1
+//    set 0
+//    set 1
+//  set number end
+//
+//  set number begin
+//    set number end
+//    set number begin
+//  set number end
+//set 3-tuple end
+//
+//set triangle begin
+//  set 3-tuple begin
+//  set 3-tuple end
+//  set 3-tuple begin
+//  set 3-tuple end
+//  set 3-tuple begin
+//  set 3-tuple end
+//set triangle end
+//
+//set mesh begin
+//  [many]
+//  set triangle begin
+//  set triangle end
+//set mesh end
 
-  var commandProcessor = function(){
-      for (var i = 0; i < this.commandQueue.queue.length; i++){
-        var currentCommand = this.commandQueue.queue[i];
-        switch(currentCommand.commandString){
-          case 'display':
-            this.display();
-            break;
-          case 'set scene':
-            break;
-          case 'get scene':
-            break;
-          case 'demo':
-            this.demo();
-            break;
-          default:
+
+  var commandList = []
+  commandList.push(
+    new Command(
+      'demo',
+       function(){
+        if (!this.initialized){
+          this.initialize()
         }
-      }
-    };
-  Programming.addCommandQueueCapability(this, ['display', 'demo'], commandProcessor);
+
+        window.requestAnimationFrame(this.rotationDemo)
+      }.bind(this)
+    )
+  )
+//  commandList.push(new Command('load scene from memory', function(){
+//    alert('test')
+//  }))
+  Programming.addCommandQueueCapability(this, commandList);
 
   if (options == null){
     options = {};
@@ -493,13 +545,6 @@ function Graph(options){
     window.requestAnimationFrame(this.rotationDemo)
   }.bind(this)
 
-  this.demo = function(){
-    if (!this.initialized){
-      this.initialize()
-    }
-
-    window.requestAnimationFrame(this.rotationDemo);
-  }
 
   //displays a scene
   this.display = function(scene){
