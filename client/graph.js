@@ -23,9 +23,6 @@ function CoordinateSystem(){
 }
 
 
-//Just an idea. The test probe will take in a set of inputs and outputs and measures an object to see if it meets the spec.
-function TestProbe(){
-}
 
 //add to the tail and take from the head
 function FIFOQueue(){
