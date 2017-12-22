@@ -29,12 +29,392 @@
   <head>
     <script type='text/javascript'>
       var graph = new Graph();
-      var scene = 'test 123';
+      graph.sceneString = 
+"\n\
+set scene begin\n\
+  set 3-tuple begin\n\
+    set number begin\n\
+      set 1\n\
+      set 0\n\
+    set number end\n\
+\n\
+    set number begin\n\
+      set 9\n\
+      set 0\n\
+    set number end\n\
+\n\
+    set number begin\n\
+      set 1\n\
+      set 9\n\
+      set 0\n\
+    set number end\n\
+\n\
+  set 3-tuple end\n\
+set scene end"
+
+
+
+//set scene begin
+//gibberish...
+//set scene end
+
+//Returns the index of next token
+//input_string is the string being parsed
+//parsing_context is the construct that is currently being parsed
+//indexes_parsed is a range string listing the number of parsed indexes
+//if there is no next token, return -1
+
+//What ranges are being parsed right now?
+function find_next_valid_token(input_string, parsing_context,indexes_parsed){
+  var next_parsing_index = RangeString.range_string_get_first_available_index(indexes_parsed) 
+
+  //valid_tokens refers to the expected tokens at any particular time
+  var valid_tokens = []
+  if (context == 'top level'){
+    valid_tokens = ['set scene begin', 'set scene end']
+  }
+  else if (context == 'set scene'){
+    valid_tokens = ['set point begin', 'set line begin', 'set triangle begin', 'set scene end']
+  }else if (context == 'set point'){
+    valid_tokens = ['set number begin', 'set number end']
+  }
+
+  var locations = []
+  for (var i = 0; i < valid_tokens.length; i++){
+    locations[i] = input_string.indexOf(valid_tokens[i], next_parsing_index) 
+  }
+
+  //are they all -1(no matching valid strings?
+  if (no_matches_found(locations)) return -1
+
+  //otherwise, return the smallest non-negative string index
+  return Programming.getMin(locations)
+}
+
+//indexes_parsed is a string representing a range of parsed indexes object
+function everything_parsed(input_string, indexes_parsed){
+  if (input_string == ''){
+    return true;
+  }
+
+  var string_length = input_string.length
+  //if one character long, then indexes_parsed must be '0'
+  if (indexes_parsed == '0') return true;
+
+  if (indexes_parsed == '0-' + (string_length - 1)){
+    return true 
+  }
+
+  return false
+}
+
+//Definition of a valid construct:
+//Example 1:
+//START = beginning token
+//END = end token
+//
+//STARTEND is valid
+//ENDSTART is invalid
+
+//Example 2:
+//Start token: ABC
+//End token: BCD
+//String: ABCD
+//This is NOT valid
+//It needs to be ABCBCD for it to be valid
+
+//Example 3:
+//Start token: A
+//End token: A
+//String: A
+//This is valid.
+//To be valid, the string must be AA
+
+function determine_if_construct_found(location_of_beginning_string, location_of_end_string, beginning_string, end_string){
+  if (location_of_beginning_keyword == -1 || location_of_end_keyword == -1){
+    return false
+  }
+
+  if (location_of_beginning_keyword >= location_of_location_of_end_keyword){
+    return false
+  }
+
+  if (location_of_beginning_keyword + beginning_string.length > location_of_end_keyword){
+    return false
+  }
+  return true
+}
+
+function get_construct_information(construct_name){
+  if (construct_name == 'set scene'){
+    return {'beginning string': 'set scene begin', 'end string': 'set scene end', 'may have children': true, 'allowed children': ['set point']}
+  }else if (construct_name == 'set point'){
+    return {'beginning string': 'set point begin', 'end string': 'set point end', 'may have children': false, 'allowed children': []}
+  }
+}
+
+function all_indexes_negative_one(input_array){
+  for (var i = 0; i < input_array.length; i++){
+    if (input_array[i] != -1) return false
+  }
+
+  return true
+}
+
+function find_number_of_array_elements_with_the_following_value(input_array, value){
+  var count = 0;
+  for (var i = 0; i < input_array.length; i++){
+    if (input_array[i] == value){
+      count++
+    }
+  }
+
+  return count
+}
+
+//Returns {'error': true/false, 'longest string': string}
+//Assume that there is at least one string
+function get_longest_string(array_of_strings){
+  if (array_of_strings.length == 0){
+    return {'error': true}
+  }
+
+  var longest_string = array_of_strings[0]
+  for (var i = 0; i < array_of_strings.length; i++){
+    if (array_of_strings[i].length > longest_string.length){
+      longest_string = array_of_strings[i]
+    }
+  }
+
+  return {'error': false, 'longest string': longest_string}
+}
+
+function get_longest_matching_string_at_index(array_of_needles, haystack, index){
+  var matched_needles = []
+  var j = 0;
+  for (var i = 0; i < array_of_needles.length; i++){
+    if (haystack.indexOf(array_of_needles[i] == index){
+      matched_needles[j] = array_of_needles[i]
+      j++
+    }
+  }
+  if (j == 0){
+    //no matches
+    return {'match found': false}
+  }
+
+  var longest_match = get_longest_string(matched_needles)['longest string']
+
+  return {'match found': true, 'longest match': longest_match}
+}
+
+//If the children are 'cat', 'cata', and 'catan'
+//And there is a string, 'catana'
+//Then the longest string will be returned
+//{'child found': true/false, 'child name': 'cat', 'location': 234}
+//
+//allowed_children is a list of constructs, such as 'point', 'line', 'triangle'
+function find_first_allowed_child(input_string, allowed_children){
+  var list_of_indexes = []
+
+  //for each construct listed, find the matching beginning string
+  var list_of_beginning_strings = []
+  for (var i = 0; i < allowed_children.length; i++){
+    list_of_beginning_strings[i] = get_construct_information(allowed_children[i])['beginning string']
+  }
+
+  for (var i = 0; i < list_of_beginning_strings.length; i++){
+    list_of_indexes[i] = input_string.indexOf(list_of_beginning_strings[i])
+  }
+  //were all indexes -1?
+  if (all_indexes_negative_one(list_of_indexes)){
+    return {'child found': false}
+  }
+
+ 
+  var non_negative_indexes = []
+  var j = 0
+  //Consider only found indexes
+  for (var i = 0; i < list_of_indexes.length; i++){
+    if (list_of_indexes[i] != -1){
+      non_negative_indexes[j] = list_of_indexes[i]
+      j++
+    }
+  }
+  var minimum_index = Programming.getMin(non_negative_indexes)
+
+  var longest_matching_beginning_string = get_longest_matching_string_at_index(list_of_beginning_strings, input_string, minimum_index)['longest match']
+  return {'child found': true, 'child name': longest_matching_beginning_string, 'location': minimum_index}
+}
+
+//returns true if the children of construct_name can be found in input_string starting from start_search_index
+function there_are_still_children_to_be_added(input_string, construct_name, start_search_index){
+}
+
+************START HERE**************************
+//This function returns the children locations inside input_string. The children who will be checked will be the children of construct_name
+//returns {'children found': true/false, 'children': [{'construct name': 'construct 1', 'beginning of construct contents': 12, 'end of construct contents': 130}]
+function get_children(input_string, construct_name){
+/*
+  var allowed_children = get_construct_information(construct_name)['allowed children']
+
+  var first_allowed_child_info = find_first_allowed_child(input_string, allowed_children)
+  if (!first_allowed_child_info['child found']){
+    return {'children found': false}
+  }
+*/
+  var start_search_location = 0
+  while(there_are_still_children_to_be_added(input_string, construct_name, start_search_location)){
+    //find the next child, and add it to the list
+    //find_first_allowed_child()...
+  }
+
+}
+
+//returns {valid construct found/ not found, location of begin and end tokens, more parsing possible or not}
+function inner_parse_and_convert(sceneString, beginning_index, end_index, target_construct){
+  var construct_information = get_construct_information(target_construct)
+
+  var beginning_string = construct_information['beginning string']
+  var end_string = construct_information['end string']
+  var location_of_beginning_keystring = sceneString.indexOf(beginning_string, beginning_index)
+  var location_of_end_keystring = -1
+  if (location_of_beginning_keystring > -1){
+    location_of_end_keystring = sceneString.indexOf(end_string, location_of_beginning_keystring + location_of_beginning_keystring.length)
+  }
+
+  var construct_found = determine_if_construct_found(location_of_beginning_keyword, location_of_end_keyword, beginning_string, end_string)
+  
+  if (construct_found){
+    //check if there are children that need to be parsed
+
+    //children = get_children(beginning, end, construct name)
+    //get_children returns [{'construct name': 'sfdsfsadf', 'beginning string location': '', 'end string location'}]
+
+    //for each child, parse the child
+    
+    }
+  }
+  //search for the beginning and end keywords. If something is invalid, end
+  //If not invalid, check if the construct can have children
+/*
+  if (construct_information['multiple allowed'] == 'false'){
+  }else{
+  }
+
+  //return {'construct found':false}*/
+}
+
+//returns a scene object based off of the sceneString passed in.
+function parse_and_convert(sceneString){
+  //returns [valid construct found/ valid construct not found], [location of begin and end words]
+  inner_parse_and_convert(sceneString, 0, sceneString.length - 1, 'set scene')
+
+
+/*
+
+  indexes_parsed = ''
+  parsing_context = 'top level'
+  var parsing_context
+
+  while (!everything_parsed(sceneString, indexes_parsed)){
+    //
+    next_valid_token = find_next_valid_token(sceneString, parsing_context, indexes_parsed)
+
+    //what sort of token is it?
+    //if it is a 'set scene begin token'
+    if (next_valid_token == -1){
+      //return an empty scene object
+      //return new Scene()
+    }
+    else if (next_valid_token == 'set scene begin'){
+      //scene_so_far = new Scene()
+      //parse_set_scene_begin(scene_so_far)
+    }
+  }
+
+  var next_valid_token
+*/
+/*
+  //parse_and_convert a scene
+
+
+  //starting from the next valid token
+  //parsed_ranges indicates which parts of a string have been parsed already
+  //if parsed_ranges == length of sceneString, then done
+  parsed_ranges = []
+
+  var currentContext = "top level"
+
+  //basic normalization
+  if (typeof this.sceneString != 'string'){
+    sceneString = ''
+  }
+
+  //look for a valid token
+  //if found, parse that token
+  //parseAndConvert(remainder of string starting from first valid token);
+
+
+  //Does it contain a Scene?
+  //No: end and create one.
+  //Yes. Loop through all the valid objects, and add them to the scene.
+  var currentScene = new Scene()
+  if (!Programming.contains(sceneString, 'set scene begin')){
+    return currentScene;
+  }
+
+  var currentContext = "set scene"
+
+  //Find earliest valid token
+  find_earliest_valid_token(currentContext);
+
+  //While looping through
+  //Is there a "A"
+  //Is there a "B"
+  //Is there a "C"?
+
+  //What is the earliest token of "A","B", "C"  //No: end and create one.
+  //Yes. Loop through all the valid objects, and add them to the scene.
+
+  //While looping through
+  //Is there a "A"
+  //Is there a "B"
+  //Is there a "C"?
+
+  //What is the earliest token of "A","B", "C"?
+  //Is any found?
+  //If yes, then analyze it.
+  //If no, then end
+
+  //While analyzing an "A".
+
+  //blank scene = default state
+
+  //current contexts = [''] //could be ['set scene'] or ['set scene', 'set number'], etc.
+  //list_of_expected_strings = 'set scene begin'
+  //Look for the string 'set scene begin'.
+  this.sceneString.search('set scene begin')
+  for (var i = 0; i < list_of_expected_strings.length; i++){
+    if (stringUnderConsideration.search(list_of_expected_strings[i]) > -1){
+    }
+    else{
+      //end processing...
+    }
+  }
+
+  //if found, parse the stuff inside
+  //if not found, create the null scene. 
+*/
+}
+
+parse_and_convert(graph.sceneString)
+/*
       //graph.addCommandToQueue('set scene');
       graph.addCommandToQueue('load scene from memory');
       //graph.addCommandToQueue('demo');
-alert('processing command queue for graph')
       graph.processCommandQueue();
+*/
     </script>
   </head>
 </html>

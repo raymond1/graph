@@ -143,10 +143,41 @@ function Graph(options){
       }.bind(this)
     )
   )
-//  commandList.push(new Command('load scene from memory', function(){
-//    alert('test')
-//  }))
+  commandList.push(new Command('load scene from memory', function(){
+    alert('test')
+  }))
+
+
   Programming.addCommandQueueCapability(this, commandList);
+
+  this.sceneString = '' //used to input a scene in text form.
+
+  //This function takes the value from this.sceneString, parses it, and creates a Scene object out of it
+  this.loadScene = function(){
+/*
+    //basic normalization
+    if (typeof this.sceneString != 'string'){
+      this.sceneString = ''
+    }
+
+    //blank scene = default state
+
+    //current contexts = [''] //could be ['set scene'] or ['set scene', 'set number'], etc.
+    //list_of_expected_strings = 'set scene begin'
+    //Look for the string 'set scene begin'.
+    this.sceneString.search('set scene begin')
+    for (var i = 0; i < list_of_expected_strings.length; i++){
+      if (stringUnderConsideration.search(list_of_expected_strings[i]) > -1){
+      }
+      else{
+        //end processing...
+      }
+    }
+
+    //if found, parse the stuff inside
+    //if not found, create the null scene. 
+*/
+  }
 
   if (options == null){
     options = {};
@@ -669,9 +700,6 @@ this.customDebugger.stickyMessage('angleToRotate: ' + angleToRotate, 'angleToRot
 
     this.canvas = document.createElement('canvas');
     this.canvasWrapper.appendChild(this.canvas);
-
-    //for testing
-//    this.canvas.style.border="thin solid red";
 
     this.canvas.height = 500;
     this.canvas.width = 500;

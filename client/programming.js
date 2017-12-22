@@ -1,6 +1,14 @@
 function Programming(){
 }
 
+//returns true if the string haystack contains the string needle
+Programming.contains = function (haystack, needle){
+  if (haystack.search(needle) > -1){
+    return true;
+  }
+  return false;
+}
+
 //returns true if test is between lowerBound and upperBound
 Programming.between = function(test, lowerBound,upperBound){
   if (test >= lowerBound && test <= upperBound) return true;
@@ -69,6 +77,37 @@ Programming.getIndexOfMin = function(_numericArray){
   return workingMinIndex;
 }
 
+Programming.getMin = function(numeric_array){
+  var minimum_value; 
+  for (var i = 0; i < numeric_array.length; i++){
+    if (typeof minimum_value == 'undefined'){
+      minimum_value = numeric_array[i]
+    }
+    else{
+      if (minimum_value > numeric_array[i]){
+        minimum_value = numeric_array[i]
+      }
+    }
+    
+  }
+  return minimum_value;
+}
+
+Programming.getMax = function(numeric_array){
+  var maximum_value
+  for (var i = 0; i < numeric_array.length; i++){
+    if (typeof maximum_value == 'undefined'){
+      maximum_value = numeric_array[i];
+    }
+    else{
+      if (numeric_array[i] > maximum_value){
+        maximum_value = numeric_array[i]
+      }
+    }
+  }
+  return maximum_value
+}
+
 Programming.insertAfter = function(elementToInsert, targetLocation){
   var parentElement = targetLocation.parentNode;
   parentElement.insertBefore(elementToInsert, targetLocation.nextSibling);
@@ -104,7 +143,12 @@ Programming.addCommandQueueCapability = function(object, commands) {
   object.processCommandQueue = function(){
     var i
     for (i = 0; i < this.commandQueue.length; i++){
-      this.commands[this.commandQueue[i]].action() 
+      try{
+        this.commands[this.commandQueue[i]].action()
+      }
+      catch (e){
+        console.log('unable to activate action for command ' + this.commandQueue[i])
+      }
     }
   }.bind(object)
 
@@ -118,3 +162,82 @@ function Command(commandString, action){
   this.action = action
 }
 
+
+function RangeString(range_string){
+}
+
+
+//Assume range string is in the correct format
+//Example range strings:
+//""
+//"2"
+//"2-3"
+//"0-1,3-4"
+//Returns an array with the selected range indices showing 1, and the non-selected range indices showing 0
+//For example, "0-1,3-4" would return the following array:
+//[1,1,0,1,1]
+//Indices 0-1 would be set to 1, as would indices 3-4. Index 2 would be 0 because it was not set to 1 anywhere else
+RangeString.flatten = function(range_string){
+  if (range_string == '') return []
+
+  var ranges = range_string.split(',')
+
+  var InternalFlattenedArray = function(){
+    length: 0
+    internal_array: []
+    function activate_index(index){
+      if (index > length - 1){
+        var temp_array = []
+        for (var i = 0; i < length; i++){
+          temp_array[i] = internal_array[i];
+        }
+
+        //increase length
+        for (var i = 0; i < index; i++){
+          internal_array[i] = 0
+        }
+
+        for (var i = 0; i < temp_array.length; i++){
+          internal_array[i] = temp_array[i]
+        }
+        internal_array[index] = 1
+      }
+    }
+  }
+
+  var internal_flattened_array = new InternalFlattenedArray()
+  //a single type range is something like 2, 6, 8
+  //a double type range is something like 1-9, 2-7
+  for (var i = 0; i < ranges.length; i++){
+    if (range_is_single(ranges[i])){
+      //what is the number?
+      activate_index(new Number(ranges[i]))
+    }
+    else { //assume range must be in double form
+      var limits = range[i].split('-')
+      for (var j = limits[0]; j <= limits[1]; j++){
+        InternalFlattenedArray.activate_index(j)
+      }
+    }
+  }
+  //get everything from first beginning to first comma
+  //Number of ranges = number of commas + 1, unless the first range is the null set
+}
+
+//[0,1,2,3,4,5]
+//For each comma-separated line, find the indices filled in
+//flatten the result
+//Return first free index
+//assume the input range string is in a correct format?
+//no overlapping ranges, no ranges that are singles, correct comma-ization
+//All consecutive ranges have been connected together
+//If there are no free indexes, -1 is returned
+RangeString.range_string_get_first_available_index = function(range_string){
+  var available_index = -1
+  //flatten the range string into an array
+
+  flattened_range_array = flatten(range_string)
+  //check if 0 is available
+  first_available_index = get_first_available_index(flattened_range_array)
+  return first_available_index
+}
