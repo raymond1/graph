@@ -131,15 +131,15 @@ function everything_parsed(input_string, indexes_parsed){
 //To be valid, the string must be AA
 
 function determine_if_construct_found(location_of_beginning_string, location_of_end_string, beginning_string, end_string){
-  if (location_of_beginning_keyword == -1 || location_of_end_keyword == -1){
+  if (location_of_beginning_string == -1 || location_of_end_string == -1){
     return false
   }
 
-  if (location_of_beginning_keyword >= location_of_location_of_end_keyword){
+  if (location_of_beginning_string >= location_of_end_string){
     return false
   }
 
-  if (location_of_beginning_keyword + beginning_string.length > location_of_end_keyword){
+  if (location_of_beginning_string + beginning_string.length > location_of_end_string){
     return false
   }
   return true
@@ -193,7 +193,7 @@ function get_longest_matching_string_at_index(array_of_needles, haystack, index)
   var matched_needles = []
   var j = 0;
   for (var i = 0; i < array_of_needles.length; i++){
-    if (haystack.indexOf(array_of_needles[i] == index){
+    if (haystack.indexOf(array_of_needles[i] == index)){
       matched_needles[j] = array_of_needles[i]
       j++
     }
@@ -251,24 +251,95 @@ function find_first_allowed_child(input_string, allowed_children){
 function there_are_still_children_to_be_added(input_string, construct_name, start_search_index){
 }
 
-************START HERE**************************
+var whitespace_characters = [' \n\t']
+function is_whitespace(character){
+  if (whitespace_characters.indexOf(character) >= 0){
+    return true
+  }
+  return false
+}
+
+function non_whitespace_character_found(input_string){
+  for (var i = 0; i < input_string.length; i++){
+    if (whitespace_characters.indexOf(input_string.charAt(i)) == -1){
+      //if a non-whitespace character was found
+      return true
+    }
+  }
+  return false
+}
+
+//UNTESTED
+//returns: {found: true/false, beginning_index: 1, end_index: 2}
+function get_first_non_whitespace_token(input_string){
+  var first_non_whitespace_character_location = -1
+
+  var done = false
+  //go character by character
+  for (var i = 0; i < input_string.length && !done; i++){
+    var character = input_string.charAt(i)
+    if (!is_whitespace(character)){
+      first_non_whitespace_character_location = i
+      done = true
+    }
+  }
+
+  //go from the first non whitespace character to the next whitespace or to the end of the string
+  var last_non_whitespace_character_location = first_non_whitespace_character_location
+  if (last_non_whitespace_character_location == -1){
+    return {'found': false}
+  }
+
+  done = false
+  for (var i = last_non_whitespace_character_location; i < input_string.length && !done; i++){
+    var character = input_string.charAt(i)
+    if (is_whitespace(character)){
+      last_non_whitespace_character_location = i - 1
+      done = true
+    }else{
+       last_non_whitespace_character_location = i
+    }
+  }
+
+  var string_to_return = input_string.substring(first_non_whitespace_character_location, last_non_whitespace_character_location + 1)
+  return {'found': true, 'beginning_index': first_non_whitespace_character_location, 'end_index': last_non_whitespace_character_location, 'string': string_to_return}
+}
+
+
+CONTINUE PROGRAMMING HERE
 //This function returns the children locations inside input_string. The children who will be checked will be the children of construct_name
 //returns {'children found': true/false, 'children': [{'construct name': 'construct 1', 'beginning of construct contents': 12, 'end of construct contents': 130}]
 function get_children(input_string, construct_name){
-/*
-  var allowed_children = get_construct_information(construct_name)['allowed children']
-
-  var first_allowed_child_info = find_first_allowed_child(input_string, allowed_children)
-  if (!first_allowed_child_info['child found']){
-    return {'children found': false}
-  }
-*/
   var start_search_location = 0
-  while(there_are_still_children_to_be_added(input_string, construct_name, start_search_location)){
-    //find the next child, and add it to the list
-    //find_first_allowed_child()...
+  var done = false
+  var children_found = false
+  var children = []
+  while (!done){
+    var token = get_first_non_whitespace_token(input_string)
+    //token['string'] is one of the valid strings
+    //token['found'] == true
+    //token['location']
+
+    if (token['found'] == true){
+      if (valid_strings.indexOf(token['string']) > -1){
+        //find the construct name, location, end location
+        //What is the matching end string
+      }else{
+        done = true
+      }
+      children_found = true
+    }
+    else{
+      done = true
+    }
   }
 
+  var return_value = {}
+  if (children_found){
+    return_value['children found'] = children_found
+  }
+
+  
 }
 
 //returns {valid construct found/ not found, location of begin and end tokens, more parsing possible or not}
@@ -283,7 +354,7 @@ function inner_parse_and_convert(sceneString, beginning_index, end_index, target
     location_of_end_keystring = sceneString.indexOf(end_string, location_of_beginning_keystring + location_of_beginning_keystring.length)
   }
 
-  var construct_found = determine_if_construct_found(location_of_beginning_keyword, location_of_end_keyword, beginning_string, end_string)
+  var construct_found = determine_if_construct_found(location_of_beginning_keystring, location_of_end_keystring, beginning_string, end_string)
   
   if (construct_found){
     //check if there are children that need to be parsed
@@ -293,7 +364,7 @@ function inner_parse_and_convert(sceneString, beginning_index, end_index, target
 
     //for each child, parse the child
     
-    }
+    //}
   }
   //search for the beginning and end keywords. If something is invalid, end
   //If not invalid, check if the construct can have children
