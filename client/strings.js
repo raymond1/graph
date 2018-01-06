@@ -2,10 +2,10 @@
 function Strings(){}
 
 
-Strings.whitespace_characters = [' \n\t']
+Strings.whitespace_characters = ' \n\t'
 
 Strings.is_whitespace = function(character){
-  if (whitespace_characters.indexOf(character) >= 0){
+  if (Strings.whitespace_characters.indexOf(character) >= 0){
     return true
   }
   return false
@@ -15,7 +15,7 @@ Strings.is_whitespace = function(character){
 //returns false otherwise
 Strings.contains_non_whitespace_character = function(input_string){
   for (var i = 0; i < input_string.length; i++){
-    if (whitespace_characters.indexOf(input_string.charAt(i)) == -1){
+    if (Strings.whitespace_characters.indexOf(input_string.charAt(i)) == -1){
       //if a non-whitespace character was found
       return true
     }
@@ -24,9 +24,12 @@ Strings.contains_non_whitespace_character = function(input_string){
 }
 
 //returns true if there are no characters preceding index in input_string, or if every character before index is a whitespace character
-Strings.index_preceded_by_whitespace(input_string, index){
+Strings.index_preceded_by_whitespace = function(input_string, index){
   for (var i = 0; i < index; i++){
-    if (!is_whitespace(input_string.charAt(i))) return false
+console.log('input_string:' + input_string + 'character:|' + input_string.charAt(i) + "|")
+    if (!Strings.is_whitespace(input_string.charAt(i))){
+      return false
+    }
   }
 
   return true

@@ -29,8 +29,8 @@
   </body>
   <head>
     <script type='text/javascript'>
-      var graph = new Graph();
-      graph.sceneString = 
+var graph = new Graph()
+graph.sceneString = 
 "\n\
 set scene begin\n\
   set 3-tuple begin\n\
@@ -80,7 +80,7 @@ function ConstructTable(construct_table){
     return []
   }
 
-  this.get_beginning_string_from_construct_name(construct_name){
+  this.get_beginning_string_from_construct_name = function(construct_name){
     for (var i = 0; i < this.table.length; i++){
       if (this.table[i]['construct'] == construct_name){
         return {'found': true, 'beginning string': this.table[i]['beginning string']}
@@ -90,10 +90,18 @@ function ConstructTable(construct_table){
   }
 
   //given a construct name, returns whether or not children are allowed for that construct
-  this.get_children_allowed(construct_name){
+  this.get_children_allowed = function(construct_name){
     for (var i = 0; i < this.table.length; i++){
       if (this.table[i]['construct'] == construct_name){
         return this.table[i]['may have children']
+      }
+    }
+  }
+
+  this.get_construct_information_from_beginning_string = function(beginning_string){
+    for (var i = 0; i < this.table.length; i++){
+      if (this.table[i]['beginning string'] == beginning_string){
+        return this.table[i]
       }
     }
   }
@@ -110,6 +118,7 @@ function Node(construct_table, type, id, children){
   }else{
     this.children = children //Of form [node1, node2, node3, ...]
   }
+
   this.get_valid_beginning_strings = function(){
     //Find the list of allowed children for the current node type
     var allowed_children = this.construct_table.get_allowed_children(this.type)
@@ -133,12 +142,11 @@ function Node(construct_table, type, id, children){
 
 function Parser(construct_table){
   this.construct_table = construct_table
-
   //Takes in a list of strings(array_of_needles), matches them one by one with the string haystack starting at offset index
   //Finds the longest match, or returns 'match found' as false if no match was found
   this.get_longest_matching_string_at_index = function(array_of_needles, haystack, index){
     var matched_needles = []
-    var j = 0;
+    var j = 0
     for (var i = 0; i < array_of_needles.length; i++){
       if (haystack.indexOf(array_of_needles[i] == index)){
         matched_needles[j] = array_of_needles[i]
@@ -150,7 +158,7 @@ function Parser(construct_table){
       return {'match found': false}
     }
   
-    var longest_match = get_longest_string(matched_needles)['longest string']
+    var longest_match = Strings.get_longest_string(matched_needles)['longest string']
   
     return {'match found': true, 'longest match': longest_match}
   }
@@ -193,45 +201,49 @@ function Parser(construct_table){
   //C)If a valid construct was found, its location, including beginning and end
   //{'found': true/false, 'construct name': 'asdfdsf', 'location': {'beginning': a, 'end': b}}
   //beginning and end locations are relative to the string passed in
-  this.process_first_construct = function(input_string, parent_node, construct_information){
+  this.process_first_construct = function(input_string, parent_node, construct_table){
+console.log('inside this.process_first_construct')
+debugger
     //list all valid beginning strings of parent_node
     var valid_beginning_strings = parent_node.get_valid_beginning_strings()
-  
+    
     //find earliest match
-    var info = find_earliest_matching_beginning_string_index()
+    var info = this.find_earliest_matching_string_index(input_string, valid_beginning_strings)
     if (info['found'] == false){
       return {'found': false}
     }
-
+  
     var earliest_matching_beginning_string_index = info['location']
-
+  
     //make sure that if there was more than one match, that the longer match is used
-    info = get_longest_matching_string_at_index(valid_beginning_strings, input_string, earliest_matching_beginning_string_index)
-    var longest_matching_string = info['longest_match']
-
+    info = this.get_longest_matching_string_at_index(valid_beginning_strings, input_string, earliest_matching_beginning_string_index)
+    var beginning_string = info['longest match']
+  
     //ensure that the matching string was preceded by whitespace
     if (!Strings.index_preceded_by_whitespace(input_string, earliest_matching_beginning_string_index)){
       return {'found': false}
     }
-
+  
     //If execution reaches here, then there is a valid beginning string
     //Is there a valid end string?
     //Start from the index after where the valid beginning string is found, and determine if a valid end string exists
-    var construct_name = construct_information.get_construct_information_from_beginning_string(longest_matching_string)
-    var info = construct_information.get_construct_information_from_construct_name(construct_name)
-    var end_string = info['end string']
+    var info = construct_table.get_construct_information_from_beginning_string(beginning_string)
+    var construct_name = info['construct']
 
-    var one_after_index_of_last_character_of_beginning_string = earliest_matching_beginning_string_index + construct_name.length
+    info = construct_table.get_construct_information_from_construct_name(construct_name)
+    var end_string = info['end string']
+  
+    var one_after_index_of_last_character_of_beginning_string = earliest_matching_beginning_string_index + beginning_string.length
     var contents_after_beginning_string = input_string.substring(one_after_index_of_last_character_of_beginning_string)
     var end_string_location_relative_to_contents_after_beginning_string = contents_after_beginning_string.indexOf(end_string)
-
+  
     var end_string_location = end_string_location_relative_to_contents_after_beginning_string + earliest_matching_beginning_string_index + info['beginning string'].length
     if (end_string_location_relative_to_contents_after_beginning_string > -1){
       //valid end string detected
       return {'found': true, 'construct name': construct_name, 'location': {'beginning': earliest_matching_beginning_string_index, 'end': end_string_location + end_string.length}}
     }
     else{
-      return {'found': false
+      return {'found': false}
     }
   }
 
@@ -239,49 +251,55 @@ function Parser(construct_table){
   //given a string, reads the first token, interprets it as a construct and parses it
   //returns {'valid construct parsed': false} or
   //{'valid construct parsed': true, 'index to continue parsing'}
-  this.parse_one_construct_if_available = function(input_string, parent_node, construct_table)){
-    var construct_information = process_first_construct(input_string, parent_node, construct_table)
-    
+  this.parse_one_construct_if_available = function(input_string, parent_node, construct_table){
+console.log('inside this.parse_one_construct_if_available')
+    var construct_information = this.process_first_construct(input_string, parent_node, construct_table)
     if (construct_information['found'] == false){
       //Do nothing. Parent node remains unchanged
+      return {'valid construct parsed': false}
     }else{
       //Create a new node named A
       //If A can have children, then continue parsing the children of A
       //Add A to the parent node
 
       var construct_name = construct_information['construct name']
+console.log('Construct detected:' + construct_name)
       var info = construct_table.get_construct_information_from_construct_name(construct_name)
       var new_node = new Node(construct_table, construct_name, this.get_unique_id(), construct_table)
       if (construct_table.get_children_allowed(construct_name)){
         var beginning_string = info['beginning string']
         var string_between_the_beginning_and_end_strings = input_string.substring(construct_information['location']['beginning'] + beginning_string.length, construct_information['location']['end'] - info['end string'].length + 1)
-        recursive_parse(string_between_the_beginning_and_end_strings, new_node, construct_table)
+        this.recursive_parse(string_between_the_beginning_and_end_strings, new_node, construct_table)
       }
       parent_node.children.push(new_node)
+      return {'valid construct parsed': true}
     }
   }
 
   this.recursive_parse = function inner_parse(input_string, parent_node, construct_table){
-    var info = parse_one_construct_if_available(input_string, parent_node, construct_table)
+console.log('inside this.recursive_parse. input_string is: ' + input_string)
+    var info = this.parse_one_construct_if_available(input_string, parent_node, construct_table)
 
-    if (info['done'] == true) return
+    //if there was no valid construct, then parsing is done
+    if (info['valid construct parsed'] == false) return
 
-    recursive_parse(input_string.substring(info['index to continue parsing']), parent_node, construct_table)
+    //if there was a valid construct, go to the end of the construct and continue parsing
+    this.recursive_parse(input_string.substring(info['index to continue parsing']), parent_node, construct_table)
   }
 
   this.get_unique_id = Programming.getUniqueIDMaker()
-
   //parses a string representing a scene, and generates a structure in memory representing the abstract meaning
   this.parse = function (scene_string){
-    var base_node = new Node(this.construct_table, 'top level context', get_unique_id())
-    recursive_parse(scene_string, base_node, construct_table)
+    var base_node = new Node(this.construct_table, 'top level context', this.get_unique_id())
+    this.recursive_parse(scene_string, base_node, construct_table)
   }
+
 }
 
-
 var construct_table = new ConstructTable([
-  {['construct': 'set scene', 'beginning string': 'set scene begin', 'end string': 'set scene end', 'may have children': true, 'allowed children': ['set point']},
-  {['construct': 'set point', 'beginning string': 'set point begin', 'end string': 'set point end', 'may have children': false, 'allowed children': []}
+  {'construct': 'top level context', 'pattern type': 'top level context', 'may have children': true, 'allowed children': ['set scene']},
+  {'construct': 'set scene', 'pattern type': 'start and finish', 'beginning string': 'set scene begin', 'end string': 'set scene end', 'may have children': true, 'allowed children': ['set point']},
+  {'construct': 'set point', 'pattern type': 'start and finish', 'beginning string': 'set point begin', 'end string': 'set point end', 'may have children': false, 'allowed children': []}
 ])
 
 var parser = new Parser(construct_table)

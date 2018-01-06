@@ -157,7 +157,7 @@ Programming.addCommandQueueCapability = function(object, commands) {
   }.bind(object)
 }
 
-Programming.getUniqueIdMaker = function (){
+Programming.getUniqueIDMaker = function (){
   var usedIDs = [];
   function innerFunction(){
     var randomString = "";
