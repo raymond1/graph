@@ -1,3 +1,4 @@
+
 function Debugger(attachmentPoint){
   //debugAreas is in the form:
   //[
@@ -15,28 +16,7 @@ function Debugger(attachmentPoint){
   this.disableMessages = false;
   this.attachmentPoint = attachmentPoint;
   
-  function getUniqueIDMaker(){
-    var usedIDs = [];
-    function innerFunction(){
-      var randomString = "";
-
-      function inArray(value,array){
-        for (var i = 0; i < array.length; i++){
-          if (array[i] == value) return true;
-        }
-        return false;
-      }
-      
-      while (inArray(randomString,usedIDs)){
-        var randomNumber = Math.floor(Math.random()*2);
-        randomString = randomString + randomNumber;
-      }
-      usedIDs.push(randomString);
-      return randomString;
-    }
-    return innerFunction;
-  }
-  this.getUniqueID = getUniqueIDMaker();
+  this.getUniqueID = Programming.getUniqueIDMaker();
   
   //_ is a protected area name
   //value is the value you want printed in the sticky area

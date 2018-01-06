@@ -157,6 +157,32 @@ Programming.addCommandQueueCapability = function(object, commands) {
   }.bind(object)
 }
 
+Programming.getUniqueIdMaker = function (){
+  var usedIDs = [];
+  function innerFunction(){
+    var randomString = "";
+
+    function inArray(value,array){
+      for (var i = 0; i < array.length; i++){
+        if (array[i] == value) return true;
+      }
+      return false;
+    }
+      
+    while (inArray(randomString,usedIDs)){
+      var randomNumber = Math.floor(Math.random()*2);
+      randomString = randomString + randomNumber;
+    }
+    usedIDs.push(randomString);
+    return randomString;
+  }
+  return innerFunction;
+}
+
+
+
+
+
 function Command(commandString, action){
   this.commandString = commandString
   this.action = action
