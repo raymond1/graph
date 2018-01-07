@@ -26,7 +26,6 @@ Strings.contains_non_whitespace_character = function(input_string){
 //returns true if there are no characters preceding index in input_string, or if every character before index is a whitespace character
 Strings.index_preceded_by_whitespace = function(input_string, index){
   for (var i = 0; i < index; i++){
-console.log('input_string:' + input_string + 'character:|' + input_string.charAt(i) + "|")
     if (!Strings.is_whitespace(input_string.charAt(i))){
       return false
     }

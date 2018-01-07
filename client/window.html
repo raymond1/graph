@@ -33,7 +33,7 @@ var graph = new Graph()
 graph.sceneString = 
 "\n\
 set scene begin\n\
-  set 3-tuple begin\n\
+  set point begin\n\
     set number begin\n\
       set 1\n\
       set 0\n\
@@ -50,16 +50,12 @@ set scene begin\n\
       set 0\n\
     set number end\n\
 \n\
-  set 3-tuple end\n\
+  set point end\n\
+  set point begin\n\
+  set point end\n\
 set scene end"
 
 
-//Example construct table
-//
-//[
-//{'construct': 'A', 'beginning string': 'test', 'end string': 'a', 'may have children': true, 'allowed children': ['set point']},
-//{'construct': 'B', 'beginning string': 'B'}
-//]
 function ConstructTable(construct_table){
   this.table = construct_table
 
@@ -197,13 +193,10 @@ function Parser(construct_table){
   }
 
   //returns A) Whether or not a valid construct was found
-  //B)If a valid contruct was found, its name
-  //C)If a valid construct was found, its location, including beginning and end
+  //B)If a valid contsruct was found, its name, location, including beginning and end
   //{'found': true/false, 'construct name': 'asdfdsf', 'location': {'beginning': a, 'end': b}}
   //beginning and end locations are relative to the string passed in
   this.process_first_construct = function(input_string, parent_node, construct_table){
-console.log('inside this.process_first_construct')
-debugger
     //list all valid beginning strings of parent_node
     var valid_beginning_strings = parent_node.get_valid_beginning_strings()
     
@@ -252,7 +245,8 @@ debugger
   //returns {'valid construct parsed': false} or
   //{'valid construct parsed': true, 'index to continue parsing'}
   this.parse_one_construct_if_available = function(input_string, parent_node, construct_table){
-console.log('inside this.parse_one_construct_if_available')
+
+    //construct_information contains information about the single construct which was parsed
     var construct_information = this.process_first_construct(input_string, parent_node, construct_table)
     if (construct_information['found'] == false){
       //Do nothing. Parent node remains unchanged
@@ -265,19 +259,18 @@ console.log('inside this.parse_one_construct_if_available')
       var construct_name = construct_information['construct name']
 console.log('Construct detected:' + construct_name)
       var info = construct_table.get_construct_information_from_construct_name(construct_name)
-      var new_node = new Node(construct_table, construct_name, this.get_unique_id(), construct_table)
+      var new_node = new Node(construct_table, construct_name, this.get_unique_id())
       if (construct_table.get_children_allowed(construct_name)){
         var beginning_string = info['beginning string']
-        var string_between_the_beginning_and_end_strings = input_string.substring(construct_information['location']['beginning'] + beginning_string.length, construct_information['location']['end'] - info['end string'].length + 1)
+        var string_between_the_beginning_and_end_strings = input_string.substring(construct_information['location']['beginning'] + beginning_string.length, construct_information['location']['end'] - info['end string'].length)
         this.recursive_parse(string_between_the_beginning_and_end_strings, new_node, construct_table)
       }
       parent_node.children.push(new_node)
-      return {'valid construct parsed': true}
+      return {'valid construct parsed': true, 'index to continue parsing': construct_information['location']['end'] + 1}
     }
   }
 
-  this.recursive_parse = function inner_parse(input_string, parent_node, construct_table){
-console.log('inside this.recursive_parse. input_string is: ' + input_string)
+  this.recursive_parse = function (input_string, parent_node, construct_table){
     var info = this.parse_one_construct_if_available(input_string, parent_node, construct_table)
 
     //if there was no valid construct, then parsing is done
