@@ -1,4 +1,3 @@
-
 function Debugger(attachmentPoint){
   //debugAreas is in the form:
   //[
@@ -91,4 +90,11 @@ function Debugger(attachmentPoint){
   }
   
 }
+
+//Adds strings to the debug log
+Debugger.debugLogMessages = ''
+Debugger.debugLog = function(input_string){
+  Debugger.debugLogMessages += input_string + '\n'
+}
+
 

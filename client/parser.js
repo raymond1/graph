@@ -1,342 +1,503 @@
-function ConstructTable(construct_table){
-  this.construct_table = construct_table
-
-  this.get_construct_information_from_construct_name = function(construct_name){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['construct'] == construct_name){
-        return this.construct_table[i]
-      }
-    }
-  }
-
-  this.get_allowed_children = function(construct_name){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['construct'] == construct_name){
-        return this.construct_table[i]['allowed children']
-      }
-    }
-    return []
-  }
-
-  this.get_beginning_string_from_construct_name = function(construct_name){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['construct'] == construct_name){
-        return {'found': true, 'beginning string': this.construct_table[i]['beginning string']}
-      }
-    }
-    return {'found': false}
-  }
-
-  //given a construct name, returns whether or not children are allowed for that construct
-  this.get_children_allowed = function(construct_name){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['construct'] == construct_name){
-        return this.construct_table[i]['may have children']
-      }
-    }
-  }
-
-  this.get_construct_information_from_beginning_string = function(beginning_string){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['beginning string'] == beginning_string){
-        return this.construct_table[i]
-      }
-    }
-  }
-}
-
 //Properties: id, children, type
 //methods: get_valid_beginning_strings
 function Node(type){
   this.type = type
   this.children = []
+  this.id = Node.get_unique_id()
+
+  this.convert_to_string = function(){
+    var children_ids = []
+    for (var i = 0; i < this.children.length; i++){
+      children_ids.push(this.children[i].id)
+    }
+
+
+    var return_string = `[id:${this.id}|type:${this.type}|children:${children_ids.join(',')}|]\n`
+
+    for (var i = 0; i < this.children.length; i++){
+      var child_as_string = this.children[i].convert_to_string()
+      return_string += child_as_string
+    }
+    return return_string
+    //[id 2312323, type asfdsf, children ids: none/ 321213,3432234]
+    //[id 321213
+    //|apples,oranges|
+  }
 }
 
-function Parser(input_grammar){
-  this.input_grammar = input_grammar
+Node.get_unique_id = Programming.getUniqueIDMaker()
 
-  //Takes in a list of strings(array_of_needles), matches them one by one with the string haystack starting at offset index
-  //Finds the longest match, or returns 'match found' as false if no match was found
-  this.get_longest_matching_string_at_index = function(array_of_needles, haystack, index){
-    var matched_needles = []
-    var j = 0
-    for (var i = 0; i < array_of_needles.length; i++){
-      if (haystack.indexOf(array_of_needles[i] == index)){
-        matched_needles[j] = array_of_needles[i]
-        j++
+
+function Parser(){
+  //Continue here
+  //Returns true if it starts with an OR_CONSTRUCT
+  this.string_starts_with_OR_CONSTRUCT = function(input_string){
+    var location_of_first_left_bracket = input_string.indexOf('[')
+    if (location_of_first_left_bracket < 0) return false
+
+    var left_of_first_left_bracket = input_string.substring(0,location_of_first_left_bracket).trim()
+    if (left_of_first_left_bracket== '' || left_of_first_left_bracket == 'OR'){
+      if (this.get_matching_right_square_bracket(input_string,location_of_first_left_bracket) > -1){
+        return true
       }
     }
-    if (j == 0){
-      //no matches
-      return {'match found': false}
-    }
-  
-    var longest_match = Strings.get_longest_string(matched_needles)['longest string']
-  
-    return {'match found': true, 'longest match': longest_match}
+
+    return false
   }
 
-  //Goes through the list of needles, and searches for their position in haystack.
-  //Returns the earliest needle position, if any
-  //If found, returns found as true, and the location
-  //If none found, returns found as false, and the location is -1
-  //{'found': true/false, 'location': location found}
-  this.find_earliest_matching_string_index = function(haystack, list_of_needles){
-  
-    //assumes there is at least one needle
-    var found_index = -1
-    var matching_string = list_of_needles[0]
-    var found = false
-    var number_of_matches = 0;
-
-    var matches = []
-    for (var i = 0; i < list_of_needles.length; i++){
-      var index_of_needle = haystack.indexOf(list_of_needles[i])
-
-      if (found == false){
-        if (index_of_needle > 0){
-          found = true
-          found_index = index_of_needle
-        }
-      }
-      else{
-        if (index_of_needle < found_index){
-          found_index = index_of_needle
-        }
-      }
-    }
-
-    return {'found': found, 'location': found_index}
+  this.string_starts_with_SEQUENCE_CONSTRUCT = function(input_string){
+    return this.string_starts_with_X_with_brackets(input_string, 'SEQUENCE')
   }
 
-  //returns A) Whether or not a valid construct was found
-  //B)If a valid contsruct was found, its name, location, including beginning and end
-  //{'found': true/false, 'construct name': 'asdfdsf', 'location': {'beginning': a, 'end': b}}
-  //beginning and end locations are relative to the string passed in
-  this.process_first_construct = function(input_string, parent_node, construct_table){
-    //list all valid beginning strings of parent_node
-    var valid_beginning_strings = parent_node.get_valid_beginning_strings()
-    
-    //find earliest match
-    var info = this.find_earliest_matching_string_index(input_string, valid_beginning_strings)
-    if (info['found'] == false){
-      return {'found': false}
-    }
-  
-    var earliest_matching_beginning_string_index = info['location']
-  
-    //make sure that if there was more than one match, that the longer match is used
-    info = this.get_longest_matching_string_at_index(valid_beginning_strings, input_string, earliest_matching_beginning_string_index)
-    var beginning_string = info['longest match']
-  
-    //ensure that the matching string was preceded by whitespace
-    if (!Strings.index_preceded_by_whitespace(input_string, earliest_matching_beginning_string_index)){
-      return {'found': false}
-    }
-  
-    //If execution reaches here, then there is a valid beginning string
-    //Is there a valid end string?
-    //Start from the index after where the valid beginning string is found, and determine if a valid end string exists
-    var info = construct_table.get_construct_information_from_beginning_string(beginning_string)
-    var construct_name = info['construct']
+  this.string_starts_with_WS_ALLOW_BOTH = function(input_string){
+    return this.string_starts_with_X_with_brackets(input_string, 'WS_ALLOW_BOTH')
+  }
 
-    info = construct_table.get_construct_information_from_construct_name(construct_name)
-    var end_string = info['end string']
-  
-    var one_after_index_of_last_character_of_beginning_string = earliest_matching_beginning_string_index + beginning_string.length
-    var contents_after_beginning_string = input_string.substring(one_after_index_of_last_character_of_beginning_string)
-    var end_string_location_relative_to_contents_after_beginning_string = contents_after_beginning_string.indexOf(end_string)
-  
-    var end_string_location = end_string_location_relative_to_contents_after_beginning_string + earliest_matching_beginning_string_index + info['beginning string'].length
-    if (end_string_location_relative_to_contents_after_beginning_string > -1){
-      //valid end string detected
-      return {'found': true, 'construct name': construct_name, 'location': {'beginning': earliest_matching_beginning_string_index, 'end': end_string_location + end_string.length}}
+  //Returns true if input_string starts with a fixed string X, followed by optional empty space and then [ and then a matching right square bracket ]
+  this.string_starts_with_X_with_brackets = function(input_string, X){
+    var location_of_first_left_bracket = input_string.indexOf('[')
+    if (location_of_first_left_bracket < 0) return false
+
+    var left_of_first_left_bracket = input_string.substring(0,location_of_first_left_bracket).trim()
+    if (left_of_first_left_bracket == X){
+      if (this.get_matching_right_square_bracket(input_string,location_of_first_left_bracket) > -1){
+        return true
+      }
+    }
+
+    return false
+  }
+
+  this.string_starts_with_RULE_NAME = function(input_string){
+    if (this.is_valid_RULE_NAME(input_string.charAt(0))) return true
+
+    return false
+  }
+
+  this.get_first_top_level_right_square_bracket = function(input_string){
+    var first_left_square_bracket = input_string.indexOf('[')
+    var matching_right_bracket_location = this.get_matching_right_square_bracket(input_string, first_left_square_bracket)
+
+    return matching_right_bracket_location
+  }
+
+  //given an input string containing a right square bracket(indicated by its location in input_string as offset)
+  //Is the string following offset one that contains whitespace and then a comma?
+  this.is_followed_by_optional_whitespace_and_then_a_comma = function(input_string, offset){
+    var first_comma_location = input_string.indexOf(',', offset)
+    if (first_comma_location < 0){
+      return false
+    }
+
+    var string_from_right_square_bracket_to_first_comma_location = input_string.substring(offset+1, first_comma_location)
+    if (string_from_right_square_bracket_to_first_comma_location == '' || !Strings.contains_non_whitespace_character(string_from_right_square_bracket_to_first_comma_location)){
+      return true
+    }
+    return false
+  }
+
+  this.string_starts_with_QUOTED_STRING = function(input_string){
+    if (Strings.count_occurrences(input_string, '\'') >= 2){
+      return true
+    }
+
+    return false
+  }
+
+  this.get_first_construct_type = function(input_string){
+    if (this.string_starts_with_OR_CONSTRUCT(input_string)) return 'or'
+    else if (this.string_starts_with_SEQUENCE_CONSTRUCT(input_string)) return 'sequence'
+    else if (this.string_starts_with_WS_ALLOW_BOTH(input_string)) return 'ws allow both'
+    else if (this.string_starts_with_RULE_NAME(input_string)) return 'rule name'
+    else if (this.string_starts_with_QUOTED_STRING(input_string)) return 'quoted string'
+    else return null
+  }
+
+  //RULE_NAME1,RULE_NAME2, OR[...], SEQUENCE[], WS_ALLOW_BOTH[...], [...]
+  //PATTERN
+  //PATTERN, PATTERN_LIST
+  this.grammarize_PATTERN_LIST = function(input_string){
+    var trimmed_input_string = input_string.trim()
+    var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
+    if (single_pattern != null){
+      var new_node = new Node('pattern list')
+      new_node.children.push(single_pattern)
+      return new_node
+    }
+
+    var construct_type = this.get_first_construct_type(trimmed_input_string)
+    if (construct_type == 'or'||construct_type == 'sequence'||construct_type == 'ws allow both'){
+      var first_top_level_right_square_bracket = this.get_first_top_level_right_square_bracket(trimmed_input_string)
+
+      var first_pattern_string = trimmed_input_string.substring(0, first_top_level_right_square_bracket + 1)
+
+      var first_pattern
+      if (construct_type == 'or'){
+        first_pattern = this.grammarize_OR_CONSTRUCT(first_pattern_string)
+      }else if (construct_type == 'sequence'){
+        first_pattern = this.grammarize_SEQUENCE_CONSTRUCT(first_pattern_string)
+      }else if (construct_type == 'ws allow both'){
+        first_pattern = this.grammarize_WS_ALLOW_BOTH(first_pattern_string)
+      }
+
+      if (first_pattern == null){
+        return null
+      }
+
+      var location_of_comma_after_first_pattern = trimmed_input_string.indexOf(',', end_location_of_or_construct)
+      var string_after_first_pattern = trimmed_input_string.substring(location_of_comma_after_first_pattern + 1, trimmed_input_string.length)
+
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(string_after_first_pattern.trim())
+      if (subsequent_pattern_list == null) return null
+
+      var new_node = new Node('pattern list')
+      new_node.children.push(first_pattern)
+      new_node.children.push(subsequent_pattern_list)
+      return new_node
+    }else if (construct_type == 'rule name'){
+      var location_of_first_comma = trimmed_input_string.indexOf(',')
+      if (location_of_first_comma < 0) return null
+
+      var trimmed_string_from_beginning_to_first_comma = trimmed_input_string.substring(0,location_of_first_comma).trim()
+
+      var first_pattern = this.grammarize_RULE_NAME(trimmed_string_from_beginning_to_first_comma)
+      if (first_pattern == null){
+        return null
+      }
+
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(location_of_first_comma + 1, trimmed_input_string.length))
+      if (subsequent_pattern_list == null) return null
+
+      var new_node = new Node('pattern list')
+      new_node.children.push(first_pattern)
+      new_node.children.push(subsequent_pattern_list)
+      return new_node
+    }
+    else if (construct_type == 'quoted string'){
+      var location_of_first_quote = 0
+      var location_of_second_quote = trimmed_input_string.indexOf('\'',1)
+      var quoted_string_node = this.grammarize_QUOTED_STRING(trimmed_input_string.substring(0,location_of_second_quote + 1))
+      if (quoted_string_node == null) return null
+
+      var first_comma_after_second_quote = trimmed_input_string.indexOf(',',location_of_second_quote)
+      if (first_comma_after_second_quote < 0) return null
+
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(first_comma_after_second_quote + 1, trimmed_input_string.length))
+
+      if (subsequent_pattern_list == null){
+        return null
+      }
+
+      var new_node = new Node('pattern list')
+      new_node.children.push(quoted_string_node)
+      new_node.children.push(subsequent_pattern_list)
+      return new_node
     }
     else{
-      return {'found': false}
-    }
-  }
-
-
-  //given a string, reads the first token, interprets it as a construct and parses it
-  //returns {'valid construct parsed': false} or
-  //{'valid construct parsed': true, 'index to continue parsing'}
-  this.parse_one_construct_if_available = function(input_string, parent_node, construct_table){
-
-    //construct_information contains information about the single construct which was parsed
-    var construct_information = this.process_first_construct(input_string, parent_node, construct_table)
-    if (construct_information['found'] == false){
-      //Do nothing. Parent node remains unchanged
-      return {'valid construct parsed': false}
-    }else{
-      //Create a new node named A
-      //If A can have children, then continue parsing the children of A
-      //Add A to the parent node
-
-      var construct_name = construct_information['construct name']
-console.log('Construct detected:' + construct_name)
-      var info = construct_table.get_construct_information_from_construct_name(construct_name)
-      var new_node = new Node(construct_table, construct_name, this.get_unique_id())
-      if (construct_table.get_children_allowed(construct_name)){
-        var beginning_string = info['beginning string']
-        var string_between_the_beginning_and_end_strings = input_string.substring(construct_information['location']['beginning'] + beginning_string.length, construct_information['location']['end'] - info['end string'].length)
-        this.recursive_parse(string_between_the_beginning_and_end_strings, new_node, construct_table)
-      }
-      parent_node.children.push(new_node)
-      return {'valid construct parsed': true, 'index to continue parsing': construct_information['location']['end'] + 1}
-    }
-  }
-
-  this.recursive_parse = function (input_string, parent_node){
-    var info = this.parse_one_construct_if_available(input_string, parent_node, construct_table)
-
-    //if there was no valid construct, then parsing is done
-    if (info['valid construct parsed'] == false) return
-
-    //if there was a valid construct, go to the end of the construct and continue parsing
-    this.recursive_parse(input_string.substring(info['index to continue parsing']), parent_node, construct_table)
-  }
-
-
-
-  this.get_unique_id = Programming.getUniqueIDMaker()
-  //parses a string representing a scene, and generates a structure in memory representing the abstract meaning
-
-  this.find_root_construct = function(){
-    for (var i = 0; i < this.construct_table.length; i++){
-      if (this.construct_table[i]['root'] == true){
-        return this.construct_table[i]
-      }
-    }
-  }
-
-  //parses many or 0 constructs
-  //What counts as 0 constructs?
-  //Returns the parsed constructs, and the remaining string which is unparsed...
-  this.parse_0_or_more = function(input_string, construct_type){
-    //If there are 0 constructs
-  }
-
-  //construct is a row in the construct table
-  //{'construct': 'root', 'pattern type': 'composed of', pattern: {'set scene': '0 or more'}, 'may have children': true, 'allowed children': ['set scene'], 'root': true},
-  this.parse_composed_of_pattern(input_string, construct){
-    var parsed_results = []
-    var pattern_keys = Object.keys(construct['pattern'])
-
-    //Each set of requirements needs to be met for the pattern to succeed
-    for (var i = 0; i < pattern_keys.length; i++){
-      parsed_results[i] = parse_type
-    }
-
-    //parse as A, parse as B, parse as C, parse as D.
-  }
-
-  this.parse_start_and_finish_pattern(input_string, construt){
-  }
-
-  this.parse_3_tuple_pattern(input_string, construct){
-  }
-
-  //Takes in a construct row(see window.html), and returns an abstract syntax tree
-  this.parse_construct = function(input_string, construct){
-    if (construct['pattern type'] == 'composed of'){
-      return this.parse_composed_of_pattern(input_string, construct)
-    }else if(construct['pattern type'] == 'start and finish'){
-      return this.parse_start_and_finish_pattern(input_string, construct)
-    }
-    else if (construct['pattern type'] == '3-tuple'){
-      return this.parse_3_tuple_pattern(input_string, construct)
-    }else{
       return null
-    }
-  }
-
-  //parse the top level construct
-  this.parse_top_level_construct = function(input_string){
-    var root_construct = this.find_root_construct()
-    return this.parse_construct(input_string, root_construct)
-  }
-
-  this.grammarize_sequence = function(sequence){
-    //
-  }
-
-  this.grammarize_PATTERN_NAME = function(){
-  }
-
-  //argument 0 is the input grammar
-  //argument 1 is a string that will be matched against the input grammar
-
-  //A PATTERN is a comma-separated list of unquoted strings(PATTERN NAME), quoted strings(STRING), a SEQUENCE, an OR
-  //Examples:
-  //['_CONSTRUCT_', '_CONSTRUCT, CONSTRUCT_LIST' passed in]
-  this.grammarize_PATTERN = function(){
-    var grammar_string = arguments[0]
-    var match_string = arguments[1]
-
-    var QUOTED_STRING_node = grammarize_QUOTED_STRING(grammar_string)
-    if (QUOTED_STRING_node != null){
-      return QUOTED_STRING_node
-    }
-
-    var PATTERN_NAME_node = grammarize_PATTERN_NAME(grammar_string)
-    if (PATTERN_NAME_node != null){
-      return PATTERN_NAME_node
-    }
-
-    var SEQUENCE_node = grammarize_SEQUENCE(grammar_string)
-    if (SEQUENCE_node != null){
-      return SEQUENCE_node
-    }
-
-    var OR_node = grammarize_OR(grammar_string)
-    if (OR_node != null){
-      return OR_node
     }
 
     return null
   }
 
-  //argument 0 is a string containing a grammar
-  //Subsequent arguments are what rules are used to interpret the grammar string
-  //Returns null if the grammar specification does not match any of the pattern arguments passed in
-  //Returns a set of nodes if there is a match
-  this.grammarize_OR = function(){
-    var grammar_string arguments[0]
-    var return_nodes = null
-    for (var i = 1; i < arguments.length; i++){
-      //each argument is a comma-separated list of patterns
-      //a PATTERN is
-      //UNQUOTED_STRING
-      //QUOTED STRING
-      return_nodes = this.grammarize_PATTERN(grammar_string, arguments[i])//for each string not in quotes, treat as a construct
-      if (return_nodes != null){
-        return return_nodes
-      }
+  this.grammarize_SEQUENCE_CONSTRUCT = function(input_string){
+    var trimmed_string = input_string.trim()
+    if (trimmed_string.length < 'SEQUENCE[]'.length) return null
+
+    var first_few_characters_of_trimmed_string = trimmed_string.substring(0,8)
+    if (first_few_characters_of_trimmed_string !== 'SEQUENCE')
+    {
+      return null
+    }
+
+    var location_of_first_left_bracket = trimmed_string.indexOf('[')
+    if (location_of_first_left_bracket < 0) return null
+
+    var location_of_last_right_bracket = this.get_matching_right_square_bracket(trimmed_string,location_of_first_left_bracket)
+    if (location_of_last_right_bracket < 0) return null
+    if (location_of_last_right_bracket != trimmed_string.length - 1) return null
+    
+    var string_in_between_square_brackets = trimmed_string.substring(location_of_first_left_bracket + 1, location_of_last_right_bracket)
+
+    var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
+    if (pattern != null){
+      var new_node = new Node('sequence construct')
+      new_node.children.push(pattern)
+      return new_node
+    }
+
+    return null
+  }
+
+  this.grammarize_OR_CONSTRUCT = function(input_string){
+    //An OR construct is either
+    //A) The word OR followed by [], or
+    //B)Just the [] by itself
+
+    var trimmed_input_string = input_string.trim()
+
+    if (trimmed_input_string.length < 3){ //minimum string needs to be []
+      return null
+    }
+
+    var location_of_first_left_bracket = trimmed_input_string.indexOf('[')
+    if (location_of_first_left_bracket < 0) return null
+
+    var location_of_matching_right_bracket = this.get_matching_right_square_bracket(trimmed_input_string, location_of_first_left_bracket)
+    if (location_of_matching_right_bracket < 0) return null
+    if (location_of_matching_right_bracket != trimmed_input_string.length - 1) return null
+
+    var string_before_first_left_bracket = trimmed_input_string.substring(0,location_of_first_left_bracket).trim()
+    if (string_before_first_left_bracket != 'OR' && string_before_first_left_bracket != '') return null
+
+    var string_in_between_two_square_brackets = trimmed_input_string.substring(location_of_first_left_bracket + 1, location_of_matching_right_bracket)
+
+    var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets)
+    if (pattern_list != null){
+      var return_node = new Node('or construct')
+      return_node.children.push = pattern_list
+      return return_node
+    }
+
+    return null
+  }
+
+  this.is_valid_RULE_NAME = function(input_string){
+    if (Strings.is_alphabetical(input_string)) return true
+    return false
+  }
+
+  this.grammarize_RULE_NAME = function(input_string){
+    var string_node = this.grammarize_ALPHABETICAL_STRING(input_string)
+    if (string_node != null){
+      var new_node = new Node('rule name')
+      new_node.children = string_node
+      return new_node
     }
     return null
   }
 
-  //Assuming grammar is a construct list, break it down into different grammars
-  this.grammarize_CONSTRUCT_LIST = function(grammar_specification){
-    child_nodes = grammarize_OR(
-      grammar_specification, '_CONSTRUCT_', 
-      '_CONSTRUCT_,\',\'CONSTRUCT_LIST')
-    )
 
-    if (child_nodes == null){
+  this.grammarize_ALPHABETICAL_STRING = function(input_string){
+    if (Strings.is_alphabetical(input_string)){
+      var new_node = new Node('string')
+      new_node.value = input_string
+      return new_node
+    }
+    return null
+  }
+
+  //For now, 'STRING' refers to alphabetic string only
+  this.grammarize_QUOTED_STRING = function(input_string){
+    //If all letters are in the range 'A-Za-z', return the string as a node.
+    if (input_string.length < 2){
+      return null
+    }
+    if (input_string.charAt(0) != '\'') return null
+    if (input_string.charAt(input_string.length -1) != '\'') return null
+
+    var middle_string = input_string.substring(input_string, 1, input_string.length -1)
+    var new_node = new Node('quoted string')
+    new_node.value = middle_string
+    return new_node
+  }
+
+  //WS_ALLOW_BOTH[PATTERN]
+  this.grammarize_WS_ALLOW_BOTH = function(input_string){
+    var trimmed_input_string = input_string.trim()
+    var location_of_first_left_square_bracket = trimmed_input_string.indexOf('[')
+    if (location_of_first_left_square_bracket < 0) return null
+
+    var string_before_first_left_square_bracket = trimmed_input_string.substring(0, location_of_first_left_square_bracket)
+    if (string_before_first_left_square_bracket.trim() != 'WS_ALLOW_BOTH') return null
+
+    var location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(trimmed_input_string, location_of_first_left_square_bracket)
+    if (location_of_matching_right_square_bracket < 0){
       return null
     }
 
-    var return_node = new Node('construct list')
-    return_node.child_nodes.append(child_nodes)
+    var string_between_two_square_brackets = trimmed_input_string.substring(location_of_first_left_square_bracket + 1, location_of_matching_right_square_bracket)
+
+    var inner_pattern = this.grammarize_PATTERN(string_between_two_square_brackets)
+    if (inner_pattern != null){
+      var new_node = new Node('ws allow both')
+      new_node.children.push(inner_pattern)
+      return new_node
+    }
+
+    return null
+  }
+
+  //STRING_CONSTRUCT, e.g. 'test'
+  //RULE_NAME, e.g. TEST
+  //OR_CONSTRUCT,
+  //SEQUENCE_CONSTRUCT
+  //WS_ALLOW_BOTH[]
+  this.grammarize_PATTERN = function(input_string){
+    var trimmed_input_string = input_string.trim()
+    var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
+    if (quoted_string != null){
+      var new_node = new Node('pattern')
+      new_node.children.push(quoted_string)
+      return new_node
+    }
+
+    var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
+    if (rule_name != null){
+      var new_node = new Node('pattern')
+      new_node.children.push(rule_name)
+      return new_node
+    }
+
+    var or_construct = this.grammarize_OR_CONSTRUCT(trimmed_input_string)
+    if (or_construct != null){
+      var new_node = new Node('pattern')
+      new_node.children.push(or_construct)
+      return new_node
+    }
+
+    var sequence_construct = this.grammarize_SEQUENCE_CONSTRUCT(trimmed_input_string)
+    if (sequence_construct != null){
+      var new_node = new Node('pattern')
+      new_node.children.push(sequence_construct)
+      return new_node
+    }
+
+    var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
+    if (ws_allow_both != null){
+      var new_node = new Node('pattern')
+      new_node.children.push(ws_allow_both)
+      return new_node
+    }
+    return null
+  }
+
+  //A valid RULE_NAME is purely alphabetical, or underscore
+  //A valid RULE_NAME must have at least one character in it
+  this.grammarize_RULE_NAME = function(input_string){
+    if (input_string.length < 1) return null
+
+    if (Strings.contains_only(input_string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
+      return new Node('rule name')
+    }
+    return null
+  }
+
+
+  //RULE = SEQUENCE[
+  //WS_ALLOW_BOTH[RULE_NAME],
+  //'=',
+  //WS_ALLOW_BOTH[RULE_NAME]
+  //]
+  //If input_string is a valid rule, return a rule node
+  //If not valid, return null
+  this.grammarize_RULE = function(input_string){
+    var index_of_equals_sign = input_string.indexOf('=') 
+    if (index_of_equals_sign < 0) return null
+
+    var left_of_equals = input_string.substring(0, index_of_equals_sign)
+    var right_of_equals = input_string.substring(index_of_equals_sign + 1, input_string.length)
+
+    if (left_of_equals.length < 1) return null
+    if (right_of_equals.length < 1) return null
+
+    var name_node = this.grammarize_RULE_NAME(left_of_equals.trim())
+    var pattern_node = this.grammarize_PATTERN(right_of_equals.trim())
+
+    if (name_node == null || pattern_node == null) return null
+
+    var return_node = new Node('rule')
+    return_node.children = [name_node, pattern_node]
+    return return_node
+  }
+
+  //location_of_left_bracket is the bracket you want to match in input_string
+  this.get_matching_right_square_bracket = function(input_string, location_of_left_bracket){
+    //[dfgfgdsfasdfa[][][[]]]
+
+    var number_of_unmatched_left_square_brackets = 0
+    for (var i = location_of_left_bracket; i < input_string.length; i++){
+      if (input_string.charAt(i) == '['){
+        number_of_unmatched_left_square_brackets++
+      }
+
+      if (input_string.charAt(i) == ']'){
+        number_of_unmatched_left_square_brackets--
+      }
+
+      if (number_of_unmatched_left_square_brackets == 0) return i
+    }
+    return -1
+  }
+
+  //NAME1=PATTERN1
+  //NAME2=PATTERN2
+  //NAME3=PATTERN3
+  //etc.
+
+  //If input_string is a valid rule list, return a rule list node, and its corresponding children
+  //If not valid, return null
+  this.grammarize_RULE_LIST = function(input_string){
+    //First, deal with the case there is only one rule
+    var single_rule = this.grammarize_RULE(input_string)
+
+    if (single_rule != null){
+      var new_node = new Node('rule list')
+      new_node.children.push(single_rule)
+      return new_node
+    }
+
+    //The case when there is a rule followed by a list
+    //1)Trim whitespace
+    //2)Check if there are at least two equal signs
+    //3)Find the first equal sign
+    //4)Check if the string to the left of the first equal sign is a valid name
+    //5)Find the first left square bracket
+    //6)Find the matching right bracket
+    //7)Process everything from the name to the right bracket as one RULE
+    //8)Process everything to the right of the right bracket as another RULE_LIST
+
+    var trimmed_input_string = input_string.trim()
+    if (Strings.count_occurrences(trimmed_input_string, '=') < 2){
+      return null
+    }
+
+    var location_of_first_equals_sign = trimmed_input_string.indexOf('=')
+    var left_of_first_equals_sign = trimmed_input_string.substring(0, location_of_first_equals_sign)
+    var trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
+
+    var rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
+    if (rule_name == null) return null
+
+    var location_of_first_left_square_bracket = trimmed_input_string.indexOf('[')
+    var location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(input_string, location_of_first_left_square_bracket)
+    if (location_of_matching_right_square_bracket == -1) return null
+
+    var first_rule_string = trimmed_input_string.substring(0, location_of_matching_right_square_bracket + 1)
+    var first_rule = this.grammarize_RULE(first_rule_string)
+    if (first_rule == null) return null
+
+    var subsequent_rule_list_string = trimmed_input_string.substring(location_of_matching_right_square_bracket + 1, trimmed_input_string.length)
+    var subsequent_rule_list = this.grammarize_RULE_LIST(subsequent_rule_list_string)
+
+    if (subsequent_rule_list == null) return null
+
+    var return_node = new Node('rule list')
+    return_node.children.push(first_rule)
+    return_node.children.push(subsequent_rule_list)
+    return return_node
   }
 
   //Takes in a string representation of a grammar, and converts it to an in-memory representation of the grammar in tree form
-  this.grammarize = function(grammar){
-    return this.grammarize_CONSTRUCT_LIST(grammar)
+  this.grammarize = function(input_string){
+    debug_log('input_string is:' + input_string)
+    var return_node = this.grammarize_RULE_LIST(input_string)
+    if (return_node == null){
+      console.log('Grammar is empty or there was an error in your grammar.')
+    }
+    return return_node
   }
-
+/*
   //1)Takes the input grammar and generates rules from them
   //2)Now that the rules have been loaded into memory, takes in a string and returns an abstract syntax tree
   this.parse = function (input_string){
@@ -344,6 +505,7 @@ console.log('Construct detected:' + construct_name)
     this.grammarize(this.input_grammar)
     return this.parse_construct(input_string, 'TOP_LEVEL_CONSTRUCT')
   }
+*/
 }
 
 /*
@@ -454,50 +616,7 @@ _NUMBER = OR['0','1','2','3','4','5','6','7','8','9']
 
 
 PATTERN EMPTY = (built-in)
-WS = (built-in)
+WS_ALLOW_BOTH = (built-in)
+COMMA = (built-in)
 
-------------------------------
-Grammar for the parser is:
-
-CONSTRUCT_LIST = OR[
-CONSTRUCT,
-SEQUENCE[CONSTRUCT,',',CONSTRUCT_LIST]
-]
-
-CONSTRUCT = OR[
-OR_CONSTRUCT,
-SEQUENCE_CONSTRUCT,
-CONSTRUCT_NAME,
-STRING
-]
-
-OR_CONSTRUCT = [
-  SEQUENCE['OR', '[', CONSTRUCT_LIST, ']']
-]
-
-SEQUENCE_CONSTRUCT = SEQUENCE[
-  'SEQUENCE', '[', CONSTRUCT_LIST, ']'
-]
-
-STRING = OR[
-STRING_CHARACTER,STRING
-STRING_CHARACTER
-]
-
-LETTER = OR[
-  'A', 'B', 'C', 'D', 'E', 'F', 'G'...
-]
-
-PATTERN = OR[
-  QUOTED_STRING
-
-  UNQUOTED_STRING
-
-  SINGULAR_PATTERN, PATTERN
-]
-
-SINGULAR_PATTERN = OR[
-  QUOTED_STRING
-  UNQUOTED_STRING
-]
 */

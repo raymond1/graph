@@ -1,0 +1,93 @@
+<html>
+<head>
+<title>Test</title>
+<meta charset="utf-8" /> 
+</head>
+<body>
+<script src='programming.js'></script>
+<script src='strings.js'></script>
+<script src='parser.js'></script>
+<script src='debugger.js'></script>
+<script>
+
+var grammar =
+`
+RULE_LIST = 
+[
+  RULE,
+  SEQUENCE
+  [
+    RULE,
+    ',',
+    RULE_LIST
+  ]
+]
+`
+/*
+RULE = SEQUENCE[
+  WS_ALLOW_BOTH[RULE_NAME],
+  '=',
+  WS_ALLOW_BOTH[PATTERN]
+]
+`
+
+*/
+/*
+PATTERN_LIST = [
+PATTERN,
+PATTERN, ',', PATTERN_LIST
+]
+`
+*/
+/*
+PATTERN = OR[
+  QUOTED_STRING,
+  OR,
+  SEQUENCE,
+  RULE_NAME,
+  WS_ALLOW_BOTH
+]
+`
+*/
+/*
+QUOTED_STRING=
+SEQUENCE[
+  CONSTRUCT_NAME
+  SEQUENCE('\'', STRING, '\'')
+]
+
+OR = [
+SEQUENCE['[', PATTERN_LIST, ']']
+  SEQUENCE['OR', '[', PATTERN_LIST, ']']
+]
+
+SEQUENCE = SEQUENCE[
+  'SEQUENCE', '[', CONSTRUCT_LIST, ']'
+]
+
+STRING = OR[
+STRING_CHARACTER,STRING
+STRING_CHARACTER
+]
+
+LETTER = OR[
+  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','
+]
+
+`
+*/
+
+
+//built-ins: WS_ALLOW_BOTH
+//left and right angle brackets
+//COMMA
+//empty
+
+var test_parser = new Parser()
+var test_data = test_parser.grammarize(grammar)
+
+console.log(test_data.convert_to_string())
+
+</script>
+</body>
+</html>

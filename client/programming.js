@@ -169,7 +169,7 @@ Programming.getUniqueIDMaker = function (){
       return false;
     }
       
-    while (inArray(randomString,usedIDs)){
+    while (inArray(randomString,usedIDs)||randomString == ''){
       var randomNumber = Math.floor(Math.random()*2);
       randomString = randomString + randomNumber;
     }
