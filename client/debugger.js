@@ -93,8 +93,17 @@ function Debugger(attachmentPoint){
 
 //Adds strings to the debug log
 Debugger.debugLogMessages = ''
+Debugger.enabled = false
+Debugger.mode = 'console' //Options are 'console', 'save to memory'
 Debugger.debugLog = function(input_string){
-  Debugger.debugLogMessages += input_string + '\n'
+  if (Debugger.enabled == true){
+    if (Debugger.mode == 'save to memory'){
+      Debugger.debugLogMessages += input_string + '\n'
+    }
+    else if (Debugger.mode == 'console'){
+      console.log(input_string)
+    }
+  }
 }
 
 

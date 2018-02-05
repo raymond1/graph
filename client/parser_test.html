@@ -22,24 +22,18 @@ RULE_LIST =
     RULE_LIST
   ]
 ]
-`
-/*
+
 RULE = SEQUENCE[
   WS_ALLOW_BOTH[RULE_NAME],
   '=',
   WS_ALLOW_BOTH[PATTERN]
 ]
-`
 
-*/
-/*
 PATTERN_LIST = [
 PATTERN,
 PATTERN, ',', PATTERN_LIST
 ]
-`
-*/
-/*
+
 PATTERN = OR[
   QUOTED_STRING,
   OR,
@@ -47,47 +41,44 @@ PATTERN = OR[
   RULE_NAME,
   WS_ALLOW_BOTH
 ]
-`
-*/
-/*
+
 QUOTED_STRING=
 SEQUENCE[
-  CONSTRUCT_NAME
-  SEQUENCE('\'', STRING, '\'')
+  SEQUENCE[S_QUOTE, STRING, S_QUOTE]
 ]
 
 OR = [
-SEQUENCE['[', PATTERN_LIST, ']']
-  SEQUENCE['OR', '[', PATTERN_LIST, ']']
+  SEQUENCE[L_SQUARE_BRACKET, PATTERN_LIST, R_SQUARE_BRACKET],
+  SEQUENCE['OR', L_SQUARE_BRACKET, PATTERN_LIST, R_SQUARE_BRACKET]
 ]
 
 SEQUENCE = SEQUENCE[
-  'SEQUENCE', '[', CONSTRUCT_LIST, ']'
+  'SEQUENCE', L_SQUARE_BRACKET, CONSTRUCT_LIST, R_SQUARE_BRACKET
 ]
 
 STRING = OR[
-STRING_CHARACTER,STRING
+SEQUENCE[STRING_CHARACTER,STRING],
 STRING_CHARACTER
 ]
 
-LETTER = OR[
-  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','
+STRING_CHARACTER = OR[
+  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
 ]
 
 `
-*/
 
 
 //built-ins: WS_ALLOW_BOTH
 //left and right angle brackets
 //COMMA
 //empty
-
+Debugger.enabled = true
+Debugger.mode = 'console'
 var test_parser = new Parser()
 var test_data = test_parser.grammarize(grammar)
 
 console.log(test_data.convert_to_string())
-
 </script>
 </body>
 </html>

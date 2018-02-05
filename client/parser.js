@@ -29,9 +29,8 @@ Node.get_unique_id = Programming.getUniqueIDMaker()
 
 
 function Parser(){
-  //Continue here
-  //Returns true if it starts with an OR_CONSTRUCT
-  this.string_starts_with_OR_CONSTRUCT = function(input_string){
+  //Returns true if it starts with an OR
+  this.string_starts_with_OR = function(input_string){
     var location_of_first_left_bracket = input_string.indexOf('[')
     if (location_of_first_left_bracket < 0) return false
 
@@ -45,7 +44,7 @@ function Parser(){
     return false
   }
 
-  this.string_starts_with_SEQUENCE_CONSTRUCT = function(input_string){
+  this.string_starts_with_SEQUENCE = function(input_string){
     return this.string_starts_with_X_with_brackets(input_string, 'SEQUENCE')
   }
 
@@ -105,8 +104,8 @@ function Parser(){
   }
 
   this.get_first_construct_type = function(input_string){
-    if (this.string_starts_with_OR_CONSTRUCT(input_string)) return 'or'
-    else if (this.string_starts_with_SEQUENCE_CONSTRUCT(input_string)) return 'sequence'
+    if (this.string_starts_with_OR(input_string)) return 'or'
+    else if (this.string_starts_with_SEQUENCE(input_string)) return 'sequence'
     else if (this.string_starts_with_WS_ALLOW_BOTH(input_string)) return 'ws allow both'
     else if (this.string_starts_with_RULE_NAME(input_string)) return 'rule name'
     else if (this.string_starts_with_QUOTED_STRING(input_string)) return 'quoted string'
@@ -117,9 +116,11 @@ function Parser(){
   //PATTERN
   //PATTERN, PATTERN_LIST
   this.grammarize_PATTERN_LIST = function(input_string){
+Debugger.debugLog('this.grammarize_PATTERN_LIST input_string is:' + input_string)
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns valid node')
       var new_node = new Node('pattern list')
       new_node.children.push(single_pattern)
       return new_node
@@ -133,9 +134,9 @@ function Parser(){
 
       var first_pattern
       if (construct_type == 'or'){
-        first_pattern = this.grammarize_OR_CONSTRUCT(first_pattern_string)
+        first_pattern = this.grammarize_OR(first_pattern_string)
       }else if (construct_type == 'sequence'){
-        first_pattern = this.grammarize_SEQUENCE_CONSTRUCT(first_pattern_string)
+        first_pattern = this.grammarize_SEQUENCE(first_pattern_string)
       }else if (construct_type == 'ws allow both'){
         first_pattern = this.grammarize_WS_ALLOW_BOTH(first_pattern_string)
       }
@@ -144,33 +145,49 @@ function Parser(){
         return null
       }
 
-      var location_of_comma_after_first_pattern = trimmed_input_string.indexOf(',', end_location_of_or_construct)
+      var location_of_comma_after_first_pattern = trimmed_input_string.indexOf(',', first_top_level_right_square_bracket)
+      if (location_of_comma_after_first_pattern < 0){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns null')
+        return null
+      }
       var string_after_first_pattern = trimmed_input_string.substring(location_of_comma_after_first_pattern + 1, trimmed_input_string.length)
 
       var subsequent_pattern_list = this.grammarize_PATTERN_LIST(string_after_first_pattern.trim())
-      if (subsequent_pattern_list == null) return null
+      if (subsequent_pattern_list == null){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns null')
+        return null
+      }
 
       var new_node = new Node('pattern list')
       new_node.children.push(first_pattern)
       new_node.children.push(subsequent_pattern_list)
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns valid node')
       return new_node
     }else if (construct_type == 'rule name'){
       var location_of_first_comma = trimmed_input_string.indexOf(',')
-      if (location_of_first_comma < 0) return null
+      if (location_of_first_comma < 0){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns null')
+        return null
+      }
 
       var trimmed_string_from_beginning_to_first_comma = trimmed_input_string.substring(0,location_of_first_comma).trim()
 
       var first_pattern = this.grammarize_RULE_NAME(trimmed_string_from_beginning_to_first_comma)
       if (first_pattern == null){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns null')
         return null
       }
 
       var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(location_of_first_comma + 1, trimmed_input_string.length))
-      if (subsequent_pattern_list == null) return null
+      if (subsequent_pattern_list == null){
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns null')
+        return null
+      }
 
       var new_node = new Node('pattern list')
       new_node.children.push(first_pattern)
       new_node.children.push(subsequent_pattern_list)
+Debugger.debugLog('this.grammarize_PATTERN_LIST returns valid node')
       return new_node
     }
     else if (construct_type == 'quoted string'){
@@ -200,7 +217,8 @@ function Parser(){
     return null
   }
 
-  this.grammarize_SEQUENCE_CONSTRUCT = function(input_string){
+  this.grammarize_SEQUENCE = function(input_string){
+console.log('this.grammarize_SEQUENCE input_string is:' + input_string)
     var trimmed_string = input_string.trim()
     if (trimmed_string.length < 'SEQUENCE[]'.length) return null
 
@@ -221,7 +239,7 @@ function Parser(){
 
     var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
     if (pattern != null){
-      var new_node = new Node('sequence construct')
+      var new_node = new Node('sequence')
       new_node.children.push(pattern)
       return new_node
     }
@@ -229,7 +247,7 @@ function Parser(){
     return null
   }
 
-  this.grammarize_OR_CONSTRUCT = function(input_string){
+  this.grammarize_OR = function(input_string){
     //An OR construct is either
     //A) The word OR followed by [], or
     //B)Just the [] by itself
@@ -328,11 +346,6 @@ function Parser(){
     return null
   }
 
-  //STRING_CONSTRUCT, e.g. 'test'
-  //RULE_NAME, e.g. TEST
-  //OR_CONSTRUCT,
-  //SEQUENCE_CONSTRUCT
-  //WS_ALLOW_BOTH[]
   this.grammarize_PATTERN = function(input_string){
     var trimmed_input_string = input_string.trim()
     var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
@@ -349,14 +362,14 @@ function Parser(){
       return new_node
     }
 
-    var or_construct = this.grammarize_OR_CONSTRUCT(trimmed_input_string)
+    var or_construct = this.grammarize_OR(trimmed_input_string)
     if (or_construct != null){
       var new_node = new Node('pattern')
       new_node.children.push(or_construct)
       return new_node
     }
 
-    var sequence_construct = this.grammarize_SEQUENCE_CONSTRUCT(trimmed_input_string)
+    var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
     if (sequence_construct != null){
       var new_node = new Node('pattern')
       new_node.children.push(sequence_construct)
@@ -438,12 +451,14 @@ function Parser(){
   //If input_string is a valid rule list, return a rule list node, and its corresponding children
   //If not valid, return null
   this.grammarize_RULE_LIST = function(input_string){
+Debugger.debugLog('this.grammarize_RULE_LIST input_string is:' + input_string)
     //First, deal with the case there is only one rule
     var single_rule = this.grammarize_RULE(input_string)
 
     if (single_rule != null){
       var new_node = new Node('rule list')
       new_node.children.push(single_rule)
+Debugger.debugLog('this.grammarize_RULE_LIST returns a valid node')
       return new_node
     }
 
@@ -459,6 +474,7 @@ function Parser(){
 
     var trimmed_input_string = input_string.trim()
     if (Strings.count_occurrences(trimmed_input_string, '=') < 2){
+Debugger.debugLog('this.grammarize_RULE_LIST returns a null')
       return null
     }
 
@@ -467,34 +483,50 @@ function Parser(){
     var trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
 
     var rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
-    if (rule_name == null) return null
+    if (rule_name == null){
+Debugger.debugLog('this.grammarize_RULE_LIST returns null')
+      return null
+    }
 
     var location_of_first_left_square_bracket = trimmed_input_string.indexOf('[')
-    var location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(input_string, location_of_first_left_square_bracket)
-    if (location_of_matching_right_square_bracket == -1) return null
+    var location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(trimmed_input_string, location_of_first_left_square_bracket)
+    if (location_of_matching_right_square_bracket == -1){
+Debugger.debugLog('this.grammarize_RULE_LIST returns null')
+      return null
+    }
 
     var first_rule_string = trimmed_input_string.substring(0, location_of_matching_right_square_bracket + 1)
     var first_rule = this.grammarize_RULE(first_rule_string)
-    if (first_rule == null) return null
+    if (first_rule == null){
+Debugger.debugLog('this.grammarize_RULE_LIST returns null')
+      return null
+    }
 
     var subsequent_rule_list_string = trimmed_input_string.substring(location_of_matching_right_square_bracket + 1, trimmed_input_string.length)
     var subsequent_rule_list = this.grammarize_RULE_LIST(subsequent_rule_list_string)
 
-    if (subsequent_rule_list == null) return null
+    if (subsequent_rule_list == null){
+Debugger.debugLog('this.grammarize_RULE_LIST returns null')
+      return null
+    }
 
     var return_node = new Node('rule list')
     return_node.children.push(first_rule)
     return_node.children.push(subsequent_rule_list)
+Debugger.debugLog('this.grammarize_RULE_LIST returns a valid node')
     return return_node
   }
 
   //Takes in a string representation of a grammar, and converts it to an in-memory representation of the grammar in tree form
   this.grammarize = function(input_string){
-    debug_log('input_string is:' + input_string)
+Debugger.debugLog('this.grammarize input_string is:' + input_string)
     var return_node = this.grammarize_RULE_LIST(input_string)
     if (return_node == null){
+Debugger.debugLog('this.grammarize returns null')
       console.log('Grammar is empty or there was an error in your grammar.')
+console.log(Debugger.debugLogMessages)
     }
+Debugger.debugLog('this.grammarize returns not null')
     return return_node
   }
 /*
