@@ -1,3 +1,5 @@
+What a mess! To continue developing on this, go into the client, and look at parser_test.html. That is the latest part that I am working on.
+
 The visual engine is a collection of files that are used to render a 3-dimensional mathematical plot on a 2d computer screen.
 
 To use it, put the lines:
