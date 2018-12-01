@@ -1,9 +1,6 @@
-var static = require('node-static');
-var fileServer = new static.Server('../client/');
-var http = require('http');
+const express = require('express')
+const app = express()
+const port = 9000
 
-http.createServer((req,res)=>{
-  req.addListener('end', function(){
-    fileServer.serve(req, res);
-  }).resume();
-}).listen(9000);
+app.use(express.static('client'))
+app.listen(port, () => console.log(``))
