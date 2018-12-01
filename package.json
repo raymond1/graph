@@ -1,0 +1,10 @@
+{
+  "name": "visualengine",
+  "version": "1.0.0",
+  "description": "The goal is to make this into a data visualization tool.",
+  "main": "index.js",
+  "repository": "https://github.com/raymond1/visualengine",
+  "author": "Raymond Leon",
+  "license": "custom",
+  "private": false
+}
