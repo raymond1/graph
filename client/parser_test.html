@@ -4,11 +4,41 @@
 <meta charset="utf-8" /> 
 </head>
 <body>
+  <div id="test">
+
+  </div>
 <script src='programming.js'></script>
 <script src='strings.js'></script>
 <script src='parser.js'></script>
 <script src='debugger.js'></script>
 <script>
+
+class TreeNode{
+  constructor(node, domElement){
+    this.node = node
+    this.expanded = false
+    let ul = document.createElement('ul')
+    ul.style.border = '4px black solid'
+    let li = document.createElement('li')
+    li.innerHTML = this.node.type + ' id:' + this.node.id
+    if (this.node.children.length > 0){
+      li.addEventListener('click', this.expand.bind(li))
+      li.parent = this
+    }
+    ul.appendChild(li)
+
+    domElement.appendChild(ul)
+  }
+  
+  expand(){
+    if (!this.parent.expanded){
+      for (const childNode of this.parent.node.children) {
+        new TreeNode(childNode, this)
+      }
+    }
+    this.parent.expanded = true
+  }
+}
 
 var grammar =
 `
@@ -76,9 +106,12 @@ STRING_CHARACTER = OR[
 Debugger.enabled = true
 Debugger.mode = 'console'
 var test_parser = new Parser()
-var test_data = test_parser.grammarize(grammar)
+var rootGrammarNode = test_parser.grammarize(grammar)
 
-console.log(test_data.convert_to_string())
+//console.log(test_data.convert_to_string())
+
+tree = new TreeNode(rootGrammarNode, document.querySelector('#test'))
+
 </script>
 </body>
 </html>

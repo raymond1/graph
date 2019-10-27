@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": "https://github.com/raymond1/visualengine",
   "author": "Raymond Leon",
-  "license": "custom",
+  "license": "SEE LICENSE IN LICENCE.TXT",
   "private": false,
   "scripts": {
     "start": "node server/index"
