@@ -13,6 +13,9 @@
 <script src='debugger.js'></script>
 <script>
 
+//Treenode connects nodes with domElements
+//A Treenode is not the node data it contains
+//A Treenode is not the domElement that is clicked on
 class TreeNode{
   constructor(node, domElement){
     this.node = node
@@ -20,10 +23,10 @@ class TreeNode{
     let ul = document.createElement('ul')
     ul.style.border = '4px black solid'
     let li = document.createElement('li')
-    li.innerHTML = this.node.type + ' id:' + this.node.id
+    li.innerHTML = 'type:' + this.node.type + ' id:' + this.node.id
     if (this.node.children.length > 0){
       li.addEventListener('click', this.expand.bind(li))
-      li.parent = this
+      li.treeNode = this
     }
     ul.appendChild(li)
 
@@ -31,16 +34,33 @@ class TreeNode{
   }
   
   expand(){
-    if (!this.parent.expanded){
-      for (const childNode of this.parent.node.children) {
+    //This refers to the li element that was clicked
+    if (!this.treeNode.expanded){
+      if (this.treeNode.node.type == 'pattern'){
+        debugger
+      }
+      for (const childNode of this.treeNode.node.children) {
         new TreeNode(childNode, this)
       }
     }
-    this.parent.expanded = true
+    this.treeNode.expanded = true
   }
 }
 
 var grammar =
+`
+RULE_LIST = 
+[
+  'RULE',
+  SEQUENCE
+  [
+    'RULE',
+    ',',
+    'RULE_LIST'
+  ]
+]
+`
+/*
 `
 RULE_LIST = 
 [
@@ -97,7 +117,7 @@ STRING_CHARACTER = OR[
 ]
 
 `
-
+*/
 
 //built-ins: WS_ALLOW_BOTH
 //left and right angle brackets
@@ -105,12 +125,11 @@ STRING_CHARACTER = OR[
 //empty
 Debugger.enabled = true
 Debugger.mode = 'console'
-var test_parser = new Parser()
-var rootGrammarNode = test_parser.grammarize(grammar)
+var test_parser = new Parser(grammar)
 
-//console.log(test_data.convert_to_string())
-
-tree = new TreeNode(rootGrammarNode, document.querySelector('#test'))
+//test_parser.parse()
+//console.log('test')
+tree = new TreeNode(test_parser.input_grammar, document.querySelector('#test'))
 
 </script>
 </body>

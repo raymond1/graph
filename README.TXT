@@ -21,5 +21,3 @@ TO DO: document
 addCommandToQueue("command", function)
 
 
-This piece of software does not obey the SPDX protocol.
-

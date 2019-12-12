@@ -27,8 +27,11 @@ function Node(type){
 
 Node.get_unique_id = Programming.getUniqueIDMaker()
 
-
-function Parser(){
+//Usage: let parser = new Parser(grammar_string)
+//parser.parse(input_string)
+//In other words, the grammar that the parser needs to parse is passed into the constructor during the creation on the Parser object
+//Then, the parse function is run, taking in an input_string representing a small set of data given in the language specified by the language loaded by the Parser object during its construction
+function Parser(grammar_string){
   //Returns true if it starts with an OR
   this.string_starts_with_OR = function(input_string){
     var location_of_first_left_bracket = input_string.indexOf('[')
@@ -218,7 +221,6 @@ Debugger.debugLog('this.grammarize_PATTERN_LIST returns valid node')
   }
 
   this.grammarize_SEQUENCE = function(input_string){
-console.log('this.grammarize_SEQUENCE input_string is:' + input_string)
     var trimmed_string = input_string.trim()
     if (trimmed_string.length < 'SEQUENCE[]'.length) return null
 
@@ -239,6 +241,7 @@ console.log('this.grammarize_SEQUENCE input_string is:' + input_string)
 
     var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
     if (pattern != null){
+      console.log('SEQUENCE detected')
       var new_node = new Node('sequence')
       new_node.children.push(pattern)
       return new_node
@@ -273,7 +276,7 @@ console.log('this.grammarize_SEQUENCE input_string is:' + input_string)
     var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets)
     if (pattern_list != null){
       var return_node = new Node('or construct')
-      return_node.children.push = pattern_list
+      return_node.children.push(pattern_list)
       return return_node
     }
 
@@ -517,27 +520,22 @@ Debugger.debugLog('this.grammarize_RULE_LIST returns a valid node')
     return return_node
   }
 
-  //Takes in a string representation of a grammar, and converts it to an in-memory representation of the grammar in tree form
+  //Takes in a string representation of a grammar, and returns a root node of an in-memory representation of the grammar in tree form
   this.grammarize = function(input_string){
-Debugger.debugLog('this.grammarize input_string is:' + input_string)
     var return_node = this.grammarize_RULE_LIST(input_string)
     if (return_node == null){
-Debugger.debugLog('this.grammarize returns null')
       console.log('Grammar is empty or there was an error in your grammar.')
-console.log(Debugger.debugLogMessages)
     }
-Debugger.debugLog('this.grammarize returns not null')
     return return_node
   }
-/*
-  //1)Takes the input grammar and generates rules from them
-  //2)Now that the rules have been loaded into memory, takes in a string and returns an abstract syntax tree
+
+  this.input_grammar = this.grammarize(grammar_string)
+
+  //takes in a string and returns an abstract syntax tree, according to previously loaded grammar
+  //Assumes there is only one top-level construct
   this.parse = function (input_string){
-    //Based off of the grammar, get a list of constructs
-    this.grammarize(this.input_grammar)
     return this.parse_construct(input_string, 'TOP_LEVEL_CONSTRUCT')
   }
-*/
 }
 
 /*
