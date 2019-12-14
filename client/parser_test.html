@@ -36,9 +36,6 @@ class TreeNode{
   expand(){
     //This refers to the li element that was clicked
     if (!this.treeNode.expanded){
-      if (this.treeNode.node.type == 'pattern'){
-        debugger
-      }
       for (const childNode of this.treeNode.node.children) {
         new TreeNode(childNode, this)
       }
@@ -48,19 +45,7 @@ class TreeNode{
 }
 
 var grammar =
-`
-RULE_LIST = 
-[
-  'RULE',
-  SEQUENCE
-  [
-    'RULE',
-    ',',
-    'RULE_LIST'
-  ]
-]
-`
-/*
+
 `
 RULE_LIST = 
 [
@@ -116,8 +101,16 @@ STRING_CHARACTER = OR[
   'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
 ]
 
+NUMBER_STRING = OR[
+  SEQUENCE[NUMBER_CHARACTER, NUMBER_STRING],
+  NUMBER_CHARACTER
+]
+
+NUMBER_CHARACTER = OR[
+  '0','1','2','3','4','5','6','7','8','9'
+]
 `
-*/
+
 
 //built-ins: WS_ALLOW_BOTH
 //left and right angle brackets
@@ -127,9 +120,27 @@ Debugger.enabled = true
 Debugger.mode = 'console'
 var test_parser = new Parser(grammar)
 
-//test_parser.parse()
+let endUserCode = `
+POINT_LIST=[
+  POINT,
+  SEQUENCE[POINT,POINT_LIST]
+]
+
+POINT=SEQUENCE[
+  'POINT(',
+  NUMBER,
+  ',',
+  NUMBER,
+  ',',
+  NUMBER,
+  ')'
+]
+
+`
+let nodes = test_parser.parse(endUserCode)
+debugger
 //console.log('test')
-tree = new TreeNode(test_parser.input_grammar, document.querySelector('#test'))
+tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 
 </script>
 </body>

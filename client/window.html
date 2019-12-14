@@ -49,7 +49,7 @@ var construct_table = new ConstructTable([
 //By example " 2 , 3 , 4 "
 var grammar =
 
-"TOP_LEVEL_CONSTRUCT = OR[
+`TOP_LEVEL_CONSTRUCT = OR[
 SCENE_LIST,
 SEQUENCE[WS SCENE_LIST],
 SEQUENCE[SCENE_LIST WS],
@@ -77,7 +77,7 @@ _NUMBER,
 _NUMBER NUMBER
 ]
 
-_NUMBER = OR['0','1','2','3','4','5','6','7','8','9']"
+_NUMBER = OR['0','1','2','3','4','5','6','7','8','9']`
 
 
 var parser = new Parser(grammar)
