@@ -80,7 +80,7 @@ class Rule extends Node{
 class RuleName extends Node{
   constructor(name){
     super()
-    this.setAttribute('name', name)
+    this.setAttribute('value', name)
     this.setAttribute('type', 'rule name')
   }
 }
@@ -88,8 +88,8 @@ class RuleName extends Node{
 class Sequence extends Node{
   constructor(patternList){
     super()
-    this.setAttribute('patternList', patternList)
-    this.setAttribute('type', 'pattern list')
+    this.setAttribute('pattern list', patternList)
+    this.setAttribute('type', 'sequence')
   }
 }
 
@@ -104,7 +104,7 @@ class WSAllowBoth extends Node{
 class Or extends Node{
   constructor(patternList){
     super()
-    this.setAttribute('patternList', patternList)
+    this.setAttribute('pattern list', patternList)
     this.setAttribute('type', 'or')
   }
 }
@@ -129,7 +129,7 @@ class Pattern extends Node{
   constructor(patternType){
     super()
     this.setAttribute('type', 'pattern')
-    this.setAttribute('patternType', patternType)
+    this.setAttribute('pattern type', patternType)
   }
 }
 
@@ -244,8 +244,7 @@ class Parser{
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
-      var new_node = new PatternList()
-      new_node.setAttribute('children', [single_pattern])
+      var new_node = new PatternList([single_pattern])
       return new_node
     }
 
@@ -279,9 +278,7 @@ class Parser{
         return null
       }
 
-      var new_node = new PatternList()
-      new_node.setAttribute('children', [first_pattern].concat(subsequent_pattern_list))
-
+      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list))
       return new_node
     }else if (construct_type == 'rule name'){
       var location_of_first_comma = trimmed_input_string.indexOf(',')
@@ -301,8 +298,7 @@ class Parser{
         return null
       }
 
-      var new_node = new PatternList()
-      new_node.setAttribute('children', [first_pattern].concat(subsequent_pattern_list))
+      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list))
       return new_node
     }
     else if (construct_type == 'quoted string'){
@@ -319,14 +315,9 @@ class Parser{
         return null
       }
 
-      var new_node = new PatternList()
-      new_node.setAttribute('children', [quoted_string_node].concat(subsequent_pattern_list))
+      var new_node = new PatternList([quoted_string_node].concat(subsequent_pattern_list))
       return new_node
     }
-    else{
-      return null
-    }
-
     return null
   }
 
@@ -351,8 +342,7 @@ class Parser{
 
     var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
     if (pattern != null){
-      var new_node = new Sequence()
-      new_node.setAttribute('children', [pattern])
+      var new_node = new Sequence([pattern])
       return new_node
     }
 
@@ -384,8 +374,7 @@ class Parser{
 
     var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets)
     if (pattern_list != null){
-      var return_node = new Or()
-      return_node.setAttribute('children', [pattern_list])
+      var return_node = new Or([pattern_list])
       return return_node
     }
 
@@ -427,9 +416,9 @@ class Parser{
     if (input_string.charAt(0) != '\'') return null
     if (input_string.charAt(input_string.length -1) != '\'') return null
 
-    var middle_string = input_string.substring(input_string, 1, input_string.length -1)
-    var new_node = new QuotedString()
-    new_node.setAttribute('string', middle_string)
+    var middle_string = input_string.substring(1, input_string.length -1)
+    
+    var new_node = new QuotedString(middle_string)
     return new_node
   }
 
@@ -452,7 +441,7 @@ class Parser{
     var inner_pattern = this.grammarize_PATTERN(string_between_two_square_brackets)
     if (inner_pattern != null){
       var new_node = new WSAllowBoth()
-      new_node.setAttribute('children', [inner_pattern])
+      new_node.setAttribute('inner pattern', [inner_pattern])
       return new_node
     }
 
@@ -463,36 +452,31 @@ class Parser{
     var trimmed_input_string = input_string.trim()
     var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
     if (quoted_string != null){
-      var new_node = new Pattern()
-      new_node.setAttribute('children', [quoted_string])
+      var new_node = quoted_string
       return new_node
     }
 
     var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
     if (rule_name != null){
-      var new_node =  new Pattern()
-      new_node.setAttribute('children', [rule_name])
+      var new_node =  rule_name
       return new_node
     }
 
     var or_construct = this.grammarize_OR(trimmed_input_string)
     if (or_construct != null){
-      var new_node =  new Pattern()
-      new_node.setAttribute('children', [or_construct])
+      var new_node =  or_construct
       return new_node
     }
 
     var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
     if (sequence_construct != null){
-      var new_node =  new Pattern()
-      new_node.setAttribute('children', [sequence_construct])
+      var new_node =  sequence_construct
       return new_node
     }
 
     var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
     if (ws_allow_both != null){
-      var new_node =  new Pattern()
-      new_node.setAttribute('children', [ws_allow_both])
+      var new_node =  ws_allow_both
       return new_node
     }
     return null
@@ -534,7 +518,7 @@ class Parser{
     if (name_node == null || pattern_node == null) return null
 
     var return_node = new Rule()
-    return_node.setAttribute('name', name_node.name)
+    return_node.setAttribute('name', name_node.value)
     return_node.setAttribute('pattern', [pattern_node])
     return return_node
   }
