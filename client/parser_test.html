@@ -2,6 +2,11 @@
 <head>
 <title>Test</title>
 <meta charset="utf-8" /> 
+<style>
+.expandable{
+  color: #4a8;
+}
+</style>
 </head>
 <body>
   <div id="test">
@@ -23,24 +28,53 @@ class TreeNode{
     let ul = document.createElement('ul')
     ul.style.border = '4px black solid'
     let li = document.createElement('li')
-    li.innerHTML = 'type:' + this.node.type + ' id:' + this.node.id
-    if (this.node.children.length > 0){
-      li.addEventListener('click', this.expand.bind(li))
-      li.treeNode = this
-    }
-    ul.appendChild(li)
+    let nodeType = node.type
+    let nodeTypeTextNode = document.createTextNode(nodeType)
+    li.appendChild(nodeTypeTextNode)
+    if (node.attributes.length > 0){
+      let attributeList = document.createElement('ul')
+      li.appendChild(attributeList)
+      for (let i = 0; i < node.attributes.length; i++){
+        let attribute = document.createElement('li')
+        let attributeText = node.attributes[i] + '=' + node[node.attributes[i]]
 
+if (node[node.attributes[i]] == 2){
+  debugger
+}
+        if (Array.isArray(node[node.attributes[i]])){
+          attributeText = node.attributes[i]
+        }
+
+        let attributeTextNode = document.createTextNode(attributeText)
+
+        attribute.appendChild(attributeTextNode)
+        if (Array.isArray(node[node.attributes[i]])){
+          for (let j = 0; j < node[node.attributes[i]].length; j++){
+              new TreeNode(node[node.attributes[i]][j], attribute)
+          }
+        }
+        attributeList.appendChild(attribute)
+      }
+    }
+
+    ul.appendChild(li)
     domElement.appendChild(ul)
   }
-  
+/*  
   expand(){
     //This refers to the li element that was clicked
     if (!this.treeNode.expanded){
       for (const childNode of this.treeNode.node.children) {
         new TreeNode(childNode, this)
       }
+      this.treeNode.expanded = true
+    }else{
+      this.treeNode.expanded = false
     }
-    this.treeNode.expanded = true
+  }
+*/
+  attributesToString(){
+
   }
 }
 
@@ -111,13 +145,13 @@ NUMBER_CHARACTER = OR[
 ]
 `
 
-
 //built-ins: WS_ALLOW_BOTH
 //left and right angle brackets
 //COMMA
 //empty
 Debugger.enabled = true
 Debugger.mode = 'console'
+
 var test_parser = new Parser(grammar)
 
 let endUserCode = `
@@ -138,7 +172,7 @@ POINT=SEQUENCE[
 
 `
 let nodes = test_parser.parse(endUserCode)
-debugger
+//debugger
 //console.log('test')
 tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 

@@ -1,10 +1,21 @@
 //Properties: id, children, type
 //methods: get_valid_beginning_strings
-function Node(type){
-  this.type = type
-  this.children = []
+function Node(){
   this.id = Node.get_unique_id()
+  this.attributes = []
 
+  //If attribute exists, overwrite it
+  //If attribute does not exist, create it
+  this.setAttribute = function(attributeName, value = null){
+    if (this.attributes.indexOf(attributeName) > -1){
+      
+    }else{
+      this.attributes.push(attributeName)
+    }
+
+    this[attributeName] = value
+  }
+  /*
   this.convert_to_string = function(){
     var children_ids = []
     for (var i = 0; i < this.children.length; i++){
@@ -22,8 +33,8 @@ function Node(type){
     //[id 2312323, type asfdsf, children ids: none/ 321213,3432234]
     //[id 321213
     //|apples,oranges|
-  }
-
+  }*/
+/*
   this.matches = function(input_string){
     if (this.type == 'or'){
       let childrenMatch = false
@@ -46,9 +57,89 @@ function Node(type){
     
     return false
   }
+  */
 }
 
 Node.get_unique_id = Programming.getUniqueIDMaker()
+
+class RuleList extends Node{
+  constructor(rulesArray){
+    super()
+    this.setAttribute('rules', rulesArray)
+    this.setAttribute('type', 'rule list')
+  }
+}
+
+class Rule extends Node{
+  constructor(){
+    super()
+    this.setAttribute('type', 'rule')
+  }
+}
+
+class RuleName extends Node{
+  constructor(name){
+    super()
+    this.setAttribute('name', name)
+    this.setAttribute('type', 'rule name')
+  }
+}
+
+class Sequence extends Node{
+  constructor(patternList){
+    super()
+    this.setAttribute('patternList', patternList)
+    this.setAttribute('type', 'pattern list')
+  }
+}
+
+class WSAllowBoth extends Node{
+  constructor(patternList){
+    super()
+    this.setAttribute('patternList', patternList)
+    this.setAttribute('type', 'ws allow both')
+  }
+}
+
+class Or extends Node{
+  constructor(patternList){
+    super()
+    this.setAttribute('patternList', patternList)
+    this.setAttribute('type', 'or')
+  }
+}
+
+class QuotedString extends Node{
+  constructor(string){
+    super()
+    this.setAttribute('string', string)
+    this.setAttribute('type', 'quoted string')
+  }
+}
+
+class AlphabeticalString extends Node{
+  constructor(string){
+    super()
+    this.setAttribute('string', string)
+    this.setAttribute('type', 'alphabetical string')
+  }
+}
+
+class Pattern extends Node{
+  constructor(patternType){
+    super()
+    this.setAttribute('type', 'pattern')
+    this.setAttribute('patternType', patternType)
+  }
+}
+
+class PatternList extends Node{
+  constructor(patterns){
+    super()
+    this.setAttribute('patterns', patterns)
+    this.setAttribute('type', 'pattern list')
+  }
+}
 
 //Usage: let parser = new Parser(grammar_string)
 //parser.parse(input_string)
@@ -57,6 +148,10 @@ Node.get_unique_id = Programming.getUniqueIDMaker()
 class Parser{
   constructor(grammarString){
     this.runningGrammar = this.grammarize(grammarString)
+
+    //assume a RULE_LIST exists
+    this.runningGrammar.rules = this.getRules(this.runningGrammar)
+    //compress the rule_list into a single node
   }
 
   //Returns true if it starts with an OR
@@ -149,8 +244,8 @@ class Parser{
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
-      var new_node = new Node('pattern list')
-      new_node.children.push(single_pattern)
+      var new_node = new PatternList()
+      new_node.setAttribute('children', [single_pattern])
       return new_node
     }
 
@@ -184,9 +279,9 @@ class Parser{
         return null
       }
 
-      var new_node = new Node('pattern list')
-      new_node.children.push(first_pattern)
-      new_node.children.push(subsequent_pattern_list)
+      var new_node = new PatternList()
+      new_node.setAttribute('children', [first_pattern].concat(subsequent_pattern_list))
+
       return new_node
     }else if (construct_type == 'rule name'){
       var location_of_first_comma = trimmed_input_string.indexOf(',')
@@ -206,13 +301,11 @@ class Parser{
         return null
       }
 
-      var new_node = new Node('pattern list')
-      new_node.children.push(first_pattern)
-      new_node.children.push(subsequent_pattern_list)
+      var new_node = new PatternList()
+      new_node.setAttribute('children', [first_pattern].concat(subsequent_pattern_list))
       return new_node
     }
     else if (construct_type == 'quoted string'){
-      var location_of_first_quote = 0
       var location_of_second_quote = trimmed_input_string.indexOf('\'',1)
       var quoted_string_node = this.grammarize_QUOTED_STRING(trimmed_input_string.substring(0,location_of_second_quote + 1))
       if (quoted_string_node == null) return null
@@ -226,9 +319,8 @@ class Parser{
         return null
       }
 
-      var new_node = new Node('pattern list')
-      new_node.children.push(quoted_string_node)
-      new_node.children.push(subsequent_pattern_list)
+      var new_node = new PatternList()
+      new_node.setAttribute('children', [quoted_string_node].concat(subsequent_pattern_list))
       return new_node
     }
     else{
@@ -259,8 +351,8 @@ class Parser{
 
     var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
     if (pattern != null){
-      var new_node = new Node('sequence')
-      new_node.children.push(pattern)
+      var new_node = new Sequence()
+      new_node.setAttribute('children', [pattern])
       return new_node
     }
 
@@ -292,8 +384,8 @@ class Parser{
 
     var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets)
     if (pattern_list != null){
-      var return_node = new Node('or construct')
-      return_node.children.push(pattern_list)
+      var return_node = new Or()
+      return_node.setAttribute('children', [pattern_list])
       return return_node
     }
 
@@ -305,13 +397,13 @@ class Parser{
     return false
   }
 
-  grammarize_RULE_NAME(input_string){
-    var string_node = this.grammarize_ALPHABETICAL_STRING(input_string)
-    if (string_node != null){
-      var new_node = new Node('rule name')
-      new_node.value = input_string
-      new_node.children = string_node
-      return new_node
+  grammarize_RULE_NAME(inputString){
+    var stringNode = this.grammarize_ALPHABETICAL_STRING(inputString)
+    if (stringNode != null){
+      var newNode = new RuleName()
+      newNode.setAttribute('string',inputString) 
+      newNode.setAttribute('children', stringNode)
+      return newNode
     }
     return null
   }
@@ -319,8 +411,8 @@ class Parser{
 
   grammarize_ALPHABETICAL_STRING (input_string){
     if (Strings.is_alphabetical(input_string)){
-      var new_node = new Node('string')
-      new_node.value = input_string
+      var new_node = new AlphabeticalString()
+      new_node.setAttribute('string', input_string)
       return new_node
     }
     return null
@@ -336,8 +428,8 @@ class Parser{
     if (input_string.charAt(input_string.length -1) != '\'') return null
 
     var middle_string = input_string.substring(input_string, 1, input_string.length -1)
-    var new_node = new Node('quoted string')
-    new_node.value = middle_string
+    var new_node = new QuotedString()
+    new_node.setAttribute('string', middle_string)
     return new_node
   }
 
@@ -359,8 +451,8 @@ class Parser{
 
     var inner_pattern = this.grammarize_PATTERN(string_between_two_square_brackets)
     if (inner_pattern != null){
-      var new_node = new Node('ws allow both')
-      new_node.children.push(inner_pattern)
+      var new_node = new WSAllowBoth()
+      new_node.setAttribute('children', [inner_pattern])
       return new_node
     }
 
@@ -371,36 +463,36 @@ class Parser{
     var trimmed_input_string = input_string.trim()
     var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
     if (quoted_string != null){
-      var new_node = new Node('pattern')
-      new_node.children.push(quoted_string)
+      var new_node = new Pattern()
+      new_node.setAttribute('children', [quoted_string])
       return new_node
     }
 
     var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
     if (rule_name != null){
-      var new_node = new Node('pattern')
-      new_node.children.push(rule_name)
+      var new_node =  new Pattern()
+      new_node.setAttribute('children', [rule_name])
       return new_node
     }
 
     var or_construct = this.grammarize_OR(trimmed_input_string)
     if (or_construct != null){
-      var new_node = new Node('pattern')
-      new_node.children.push(or_construct)
+      var new_node =  new Pattern()
+      new_node.setAttribute('children', [or_construct])
       return new_node
     }
 
     var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
     if (sequence_construct != null){
-      var new_node = new Node('pattern')
-      new_node.children.push(sequence_construct)
+      var new_node =  new Pattern()
+      new_node.setAttribute('children', [sequence_construct])
       return new_node
     }
 
     var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
     if (ws_allow_both != null){
-      var new_node = new Node('pattern')
-      new_node.children.push(ws_allow_both)
+      var new_node =  new Pattern()
+      new_node.setAttribute('children', [ws_allow_both])
       return new_node
     }
     return null
@@ -412,7 +504,8 @@ class Parser{
     if (input_string.length < 1) return null
 
     if (Strings.contains_only(input_string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
-      return new Node('rule name')
+      let returnNode = new RuleName(input_string)
+      return returnNode
     }
     return null
   }
@@ -440,9 +533,9 @@ class Parser{
 
     if (name_node == null || pattern_node == null) return null
 
-    var return_node = new Node('rule')
-    return_node.name = name_node.value
-    return_node.children = [name_node, pattern_node]
+    var return_node = new Rule()
+    return_node.setAttribute('name', name_node.name)
+    return_node.setAttribute('pattern', [pattern_node])
     return return_node
   }
 
@@ -465,10 +558,7 @@ class Parser{
     return -1
   }
 
-  //NAME1=PATTERN1
-  //NAME2=PATTERN2
-  //NAME3=PATTERN3
-  //etc.
+
 
   //If input_string is a valid rule list, return a rule list node, and its corresponding children
   //If not valid, return null
@@ -477,8 +567,7 @@ class Parser{
     var single_rule = this.grammarize_RULE(input_string)
 
     if (single_rule != null){
-      var new_node = new Node('rule list')
-      new_node.children.push(single_rule)
+      let new_node = new RuleList([single_rule])
       return new_node
     }
 
@@ -524,10 +613,8 @@ class Parser{
     if (subsequent_rule_list == null){
       return null
     }
-
-    var return_node = new Node('rule list')
-    return_node.children.push(first_rule)
-    return_node.children.push(subsequent_rule_list)
+    let concatenatedRules = [first_rule].concat(subsequent_rule_list)
+    var return_node = new RuleList(concatenatedRules)
     return return_node
   }
 
@@ -540,15 +627,16 @@ class Parser{
     return return_node
   }
 
+  //Gets all nodes of type rule that are descendants of the current node
   getRules(grammarNode){
     let rules = []
     if (grammarNode.type == 'rule'){
       rules.push(grammarNode)
       return rules
     }else{
-      if (grammarNode.children){
-        for (let i = 0; i < grammarNode.children.length; i++){
-          let childRules = this.getRules(grammarNode.children[i])
+      if (grammarNode.rules.length > 0){
+        for (let i = 0; i < grammarNode.rules.length; i++){
+          let childRules = this.getRules(grammarNode.rules[i])
           rules = rules.concat(childRules)
         }
       }
@@ -564,15 +652,7 @@ class Parser{
     let output = []
     let rules = this.getRules(this.runningGrammar)
     for (let i = 0; i < rules.length; i++){
-      //Does the inputString obey rule 1?
-      //If yes, then emit a rule 1 detection
-      //Continue for subsequent rules
-      /*
-      if (rules[i].matches(inputString)){
-        //what type of rule is it?
 
-        output.push(new Node(rules[i].name))
-      }*/
     }
     return output;//this.parse_construct(input_string, 'TOP_LEVEL_CONSTRUCT')
   }
