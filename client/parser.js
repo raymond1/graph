@@ -68,12 +68,40 @@ class RuleList extends Node{
     this.setAttribute('rules', rulesArray)
     this.setAttribute('type', 'rule list')
   }
+  
+  //given a string, attempts to match the beginning of the string with a rule list
+  //If there is a rule list discovered, returns the length of the string that matches the rule list in matchLength.
+  //If a rule list is not discovered, matchLength is undefined
+  //{matchFound: true/false, matchLength: length of match in characters}
+  //If there is no rule list discovered
+  matchOne(string){
+    //string is a rule list if any of the members of rules matches string
+    //In other words, this is an or match
+    for (let i = 0; i < this.rules.length; i++){
+      let matchInformation = this.rules[i].matchOne(string)
+      if (matchInformation.matchFound){
+        return {matchFound: true, matchLength: matchInformation.matchLength}
+      }
+    }
+    return {matchFound: false}
+  }
 }
 
 class Rule extends Node{
-  constructor(){
+  constructor(pattern, name){
     super()
     this.setAttribute('type', 'rule')
+    this.setAttribute('pattern', pattern)
+    this.setAttribute('name', name)
+  }
+
+  matchOne(string){
+    //Does string match the pattern specified by the rule?
+    let matchInfo = this.pattern.matchOne(string)
+    if (matchInfo.matchFound){
+      return {matchFound:true, matchLength: matchInfo.matchLength}
+    }
+    return {matchFound: false}
   }
 }
 
@@ -83,6 +111,24 @@ class RuleName extends Node{
     this.setAttribute('value', name)
     this.setAttribute('type', 'rule name')
   }
+
+  matchOne(string){
+    let matchFound = false
+    let i;
+    for (i = 0; i < string.length; i++){
+      if (Strings.is_alphabetical(string.charAt(i))){
+        matchFound = true
+      }
+      else{
+        break
+      }
+    }
+    if (matchFound){
+      return {matchFound: matchFound, matchLength: i}
+    }else{
+      return {matchFound: false}
+    }
+  }
 }
 
 class Sequence extends Node{
@@ -91,53 +137,155 @@ class Sequence extends Node{
     this.setAttribute('pattern list', patternList)
     this.setAttribute('type', 'sequence')
   }
+
+  matchOne(string){
+    return this['pattern list'].matchOne(string)
+  }
 }
 
+//WS_ALLOW_BOTH must take a parameter
+//Assumes you are not going to use WS_ALLOW_BOTH on a whitespace character
 class WSAllowBoth extends Node{
-  constructor(patternList){
+  constructor(innerPattern){
     super()
-    this.setAttribute('patternList', patternList)
+    this.setAttribute('inner pattern', innerPattern)
     this.setAttribute('type', 'ws allow both')
+  }
+
+  matchOne(string){
+    let numberOfLeadingWhitespaceCharacters = 0
+    let numberOfTrailingWhitespaceCharacters = 0.
+
+    let i = 0
+    for (i = 0; Strings.is_whitespace(string.charAt(i)); i++){
+    }
+    numberOfLeadingWhitespaceCharacters = i
+
+    let remainderString = string.substring(i)
+    let innerPatternMatchInfo = this['inner pattern'].matchOne(remainderString)
+    if (innerPatternMatchInfo.matchFound){
+      let afterInnerPattern = remainderString.substring(innerPatternMatchInfo.matchLength)
+      for (i = 0; Strings.is_whitespace(afterInnerPattern.charAt(i)); i++){
+      }
+      numberOfTrailingWhitespaceCharacters = i
+      return {matchFound: true, matchLength: numberOfLeadingWhitespaceCharacters + innerPatternMatchInfo.matchEnd + numberOfTrailingWhitespaceCharacters}
+    }else{
+      return {matchFound: false}
+    }
+    //is it just the pattern with no white space at the front?
+    //is there whitespace in the front?
+    //If yes, is it followed by the pattern?
+    //If yes, is it followed by whitespace?
   }
 }
 
 class Or extends Node{
+  //patternList is an array
   constructor(patternList){
     super()
     this.setAttribute('pattern list', patternList)
     this.setAttribute('type', 'or')
   }
+
+  matchOne(string){
+    return this['pattern list'].matchOne(string)
+  }
 }
 
+//A Quoted string is a ' followed by a string followed by a '
+//Currently, there is no such thing as an empty string ''. You must have something in between.
 class QuotedString extends Node{
   constructor(string){
     super()
     this.setAttribute('string', string)
     this.setAttribute('type', 'quoted string')
   }
+
+  matchOne(string){
+    let quotedString = '\'' + this['string'] + '\''
+    
+    if (string.substring(0, quotedString.length) == quotedString){
+      return {matchFound: true, matchLength: quotedString.length}
+    }else{
+      return {matchFound: false}
+    }
+  }
 }
 
+//Consecutive a-zA-Z characters
 class AlphabeticalString extends Node{
   constructor(string){
     super()
     this.setAttribute('string', string)
     this.setAttribute('type', 'alphabetical string')
   }
-}
 
-class Pattern extends Node{
-  constructor(patternType){
-    super()
-    this.setAttribute('type', 'pattern')
-    this.setAttribute('pattern type', patternType)
+  matchOne(string){
+    let alphabeticalString = this['string']
+    
+    if (string.substring(0, alphabeticalString.length) == alphabeticalString){
+      return {matchFound: true, matchLength: alphabeticalString.length}
+    }else{
+      return {matchFound: false}
+    }
   }
 }
 
+class Pattern extends Node{
+  constructor(innerPattern){
+    super()
+    this.setAttribute('type', 'pattern')
+    this.setAttribute('inner pattern', innerPattern)//is it a 'quoted string', an 'or', a 'sequence', a 'rule name', or a 'ws allow both'?
+  }
+
+  matchOne(string){
+    let matchInfo = this['inner pattern'].matchOne(string)
+    return matchInfo
+  }
+}
+
+//patterns is an array of patterns
+//patternListType is either 'or' or 'sequence'
 class PatternList extends Node{
-  constructor(patterns){
+  constructor(patterns, patternListType){
     super()
     this.setAttribute('patterns', patterns)
+    this.setAttribute('pattern list type', patternListType)
     this.setAttribute('type', 'pattern list')
+  }
+
+  matchOne(string){
+    if (this['pattern list type'] == 'or'){
+      for (let i = 0; i < this['patterns'].length; i++){
+        let matchInfo = this['patterns'][i].matchOne(string)
+        if (matchInfo.matchFound){
+          return matchInfo
+        }
+      }
+    }else if (this['pattern list type'] == 'sequence'){
+      let patterns = this['patterns']
+      let tempString = string
+      let matchInfoArray = []
+  
+      for (let i = 0; i < patterns.length; i++){
+        let matchInfo = patterns[i].matchOne(tempString)
+        matchInfoArray.push(matchInfo) 
+        if (!matchInfo.matchFound){
+          return {matchFound: false}
+        }else{
+          tempString = tempString.substring(matchInfo.length)
+        }
+      }
+  
+      let totalMatchLength = 0
+      for (let i = 0; i < matchInfoArray.length; i++){
+        totalMatchLength += matchInfoArray[i].matchLength
+      }
+      return {matchFound: true, matchLength: totalMatchLength}
+
+    }
+
+    return {matchFound: false}
   }
 }
 
@@ -150,7 +298,7 @@ class Parser{
     this.runningGrammar = this.grammarize(grammarString)
 
     //assume a RULE_LIST exists
-    this.runningGrammar.rules = this.getRules(this.runningGrammar)
+    //this.runningGrammar.rules = this.getRules(this.runningGrammar)
     //compress the rule_list into a single node
   }
 
@@ -193,7 +341,7 @@ class Parser{
   }
 
   string_starts_with_RULE_NAME(input_string){
-    if (this.is_valid_RULE_NAME(input_string.charAt(0))) return true
+    if (Parser.is_valid_RULE_NAME(input_string.charAt(0))) return true
 
     return false
   }
@@ -240,11 +388,13 @@ class Parser{
   //RULE_NAME1,RULE_NAME2, OR[...], SEQUENCE[], WS_ALLOW_BOTH[...], [...]
   //PATTERN
   //PATTERN, PATTERN_LIST
-  grammarize_PATTERN_LIST(input_string){
+  //There are actually two types of pattern lists: or and sequence.
+  //This is because it is necessary to know the context of a pattern list in order to know how to interpret it properly later on
+  grammarize_PATTERN_LIST(input_string, pattern_list_type){
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
-      var new_node = new PatternList([single_pattern])
+      var new_node = new PatternList([single_pattern], pattern_list_type)
       return new_node
     }
 
@@ -273,12 +423,12 @@ class Parser{
       }
       var string_after_first_pattern = trimmed_input_string.substring(location_of_comma_after_first_pattern + 1, trimmed_input_string.length)
 
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(string_after_first_pattern.trim())
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(string_after_first_pattern.trim(), pattern_list_type)
       if (subsequent_pattern_list == null){
         return null
       }
 
-      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list))
+      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list), pattern_list_type)
       return new_node
     }else if (construct_type == 'rule name'){
       var location_of_first_comma = trimmed_input_string.indexOf(',')
@@ -293,12 +443,12 @@ class Parser{
         return null
       }
 
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(location_of_first_comma + 1, trimmed_input_string.length))
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(location_of_first_comma + 1, trimmed_input_string.length), pattern_list_type)
       if (subsequent_pattern_list == null){
         return null
       }
 
-      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list))
+      var new_node = new PatternList([first_pattern].concat(subsequent_pattern_list), pattern_list_type)
       return new_node
     }
     else if (construct_type == 'quoted string'){
@@ -309,13 +459,13 @@ class Parser{
       var first_comma_after_second_quote = trimmed_input_string.indexOf(',',location_of_second_quote)
       if (first_comma_after_second_quote < 0) return null
 
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(first_comma_after_second_quote + 1, trimmed_input_string.length))
+      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(first_comma_after_second_quote + 1, trimmed_input_string.length), pattern_list_type)
 
       if (subsequent_pattern_list == null){
         return null
       }
 
-      var new_node = new PatternList([quoted_string_node].concat(subsequent_pattern_list))
+      var new_node = new PatternList([quoted_string_node].concat(subsequent_pattern_list), pattern_list_type)
       return new_node
     }
     return null
@@ -340,9 +490,9 @@ class Parser{
     
     var string_in_between_square_brackets = trimmed_string.substring(location_of_first_left_bracket + 1, location_of_last_right_bracket)
 
-    var pattern = this.grammarize_PATTERN_LIST(string_in_between_square_brackets)
-    if (pattern != null){
-      var new_node = new Sequence([pattern])
+    var patternList = this.grammarize_PATTERN_LIST(string_in_between_square_brackets, 'sequence')
+    if (patternList != null){
+      var new_node = new Sequence(patternList)
       return new_node
     }
 
@@ -372,27 +522,23 @@ class Parser{
 
     var string_in_between_two_square_brackets = trimmed_input_string.substring(location_of_first_left_bracket + 1, location_of_matching_right_bracket)
 
-    var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets)
+    var pattern_list = this.grammarize_PATTERN_LIST(string_in_between_two_square_brackets, 'or')
     if (pattern_list != null){
-      var return_node = new Or([pattern_list])
+      var return_node = new Or(pattern_list)
       return return_node
     }
 
     return null
   }
 
-  is_valid_RULE_NAME(input_string){
-    if (Strings.is_alphabetical(input_string)) return true
-    return false
-  }
+  //A valid RULE_NAME is purely alphabetical, or underscore
+  //A valid RULE_NAME must have at least one character in it
+  grammarize_RULE_NAME(input_string){
+    if (input_string.length < 1) return null
 
-  grammarize_RULE_NAME(inputString){
-    var stringNode = this.grammarize_ALPHABETICAL_STRING(inputString)
-    if (stringNode != null){
-      var newNode = new RuleName()
-      newNode.setAttribute('string',inputString) 
-      newNode.setAttribute('children', stringNode)
-      return newNode
+    if (Strings.contains_only(input_string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
+      let returnNode = new RuleName(input_string)
+      return returnNode
     }
     return null
   }
@@ -407,9 +553,9 @@ class Parser{
     return null
   }
 
-  //For now, 'STRING' refers to alphabetic string only
+
   grammarize_QUOTED_STRING(input_string){
-    //If all letters are in the range 'A-Za-z', return the string as a node.
+    //If all characters are in the range 'A-Za-z0-9', return the string as a node.
     if (input_string.length < 2){
       return null
     }
@@ -440,8 +586,7 @@ class Parser{
 
     var inner_pattern = this.grammarize_PATTERN(string_between_two_square_brackets)
     if (inner_pattern != null){
-      var new_node = new WSAllowBoth()
-      new_node.setAttribute('inner pattern', [inner_pattern])
+      var new_node = new WSAllowBoth(inner_pattern)
       return new_node
     }
 
@@ -452,47 +597,31 @@ class Parser{
     var trimmed_input_string = input_string.trim()
     var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
     if (quoted_string != null){
-      var new_node = quoted_string
-      return new_node
+      return new Pattern(quoted_string, 'quoted string')
     }
 
     var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
     if (rule_name != null){
-      var new_node =  rule_name
-      return new_node
+      return new Pattern(rule_name, 'rule name')
     }
 
     var or_construct = this.grammarize_OR(trimmed_input_string)
     if (or_construct != null){
-      var new_node =  or_construct
-      return new_node
+      return new Pattern(or_construct, 'or')
     }
 
     var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
     if (sequence_construct != null){
-      var new_node =  sequence_construct
-      return new_node
+      return new Pattern(sequence_construct, 'sequence')
     }
 
     var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
     if (ws_allow_both != null){
-      var new_node =  ws_allow_both
-      return new_node
+      return new Pattern(ws_allow_both, 'ws allow both')
     }
     return null
   }
 
-  //A valid RULE_NAME is purely alphabetical, or underscore
-  //A valid RULE_NAME must have at least one character in it
-  grammarize_RULE_NAME(input_string){
-    if (input_string.length < 1) return null
-
-    if (Strings.contains_only(input_string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
-      let returnNode = new RuleName(input_string)
-      return returnNode
-    }
-    return null
-  }
 
 
   //RULE = SEQUENCE[
@@ -517,9 +646,8 @@ class Parser{
 
     if (name_node == null || pattern_node == null) return null
 
-    var return_node = new Rule()
-    return_node.setAttribute('name', name_node.value)
-    return_node.setAttribute('pattern', [pattern_node])
+    var return_node = new Rule(pattern_node, name_node.value)
+
     return return_node
   }
 
@@ -551,8 +679,7 @@ class Parser{
     var single_rule = this.grammarize_RULE(input_string)
 
     if (single_rule != null){
-      let new_node = new RuleList([single_rule])
-      return new_node
+      return single_rule
     }
 
     //The case when there is a rule followed by a list
@@ -634,13 +761,20 @@ class Parser{
   //Assumes there is only one top-level construct
   parse(inputString){
     let output = []
-    let rules = this.getRules(this.runningGrammar)
-    for (let i = 0; i < rules.length; i++){
+    let matchInformation = this.runningGrammar.matchOne(inputString)
 
+    if (matchInformation.matchFound){
+      output.push(this.runningGrammar.type)
     }
-    return output;//this.parse_construct(input_string, 'TOP_LEVEL_CONSTRUCT')
+    return output;
   }
 }
+
+Parser.is_valid_RULE_NAME = function(input_string){
+  if (Strings.is_alphabetical(input_string)) return true
+  return false
+}
+
 
 /*
 

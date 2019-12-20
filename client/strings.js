@@ -67,11 +67,11 @@ Strings.whitespace_characters = ' \n\t'
 
 Strings.is_whitespace = function(input_string){
   for (var i = 0; i < input_string.length; i++){
-    if (!(Strings.whitespace_characters.indexOf(character) >= 0)){
+    if (!(Strings.whitespace_characters.indexOf(input_string.charAt(i)) >= 0)){
       return false
     }
   }
-  return false
+  return true
 }
 
 //Returns true if the string contains a non-whitespace character

@@ -28,6 +28,9 @@ class TreeNode{
     let ul = document.createElement('ul')
     ul.style.border = '4px black solid'
     let li = document.createElement('li')
+    if (node == null){
+      debugger
+    }
     let nodeType = node.type
     let nodeTypeTextNode = document.createTextNode(nodeType)
     li.appendChild(nodeTypeTextNode)
@@ -38,10 +41,7 @@ class TreeNode{
         let attribute = document.createElement('li')
         let attributeText = node.attributes[i] + '=' + node[node.attributes[i]]
 
-if (node[node.attributes[i]] == 2){
-  debugger
-}
-        if (Array.isArray(node[node.attributes[i]])){
+        if (Array.isArray(node[node.attributes[i]])||typeof node[node.attributes[i]] == 'object'){
           attributeText = node.attributes[i]
         }
 
@@ -52,6 +52,8 @@ if (node[node.attributes[i]] == 2){
           for (let j = 0; j < node[node.attributes[i]].length; j++){
               new TreeNode(node[node.attributes[i]][j], attribute)
           }
+        }else if (typeof node[node.attributes[i]] == 'object'){
+          new TreeNode(node[node.attributes[i]], attribute)
         }
         attributeList.appendChild(attribute)
       }
@@ -111,9 +113,10 @@ PATTERN = OR[
   WS_ALLOW_BOTH
 ]
 
-QUOTED_STRING=
-SEQUENCE[
-  SEQUENCE[S_QUOTE, STRING, S_QUOTE]
+QUOTED_STRING= OR[
+  SEQUENCE[
+    SEQUENCE[S_QUOTE, STRING, S_QUOTE]
+  ]
 ]
 
 OR = [
@@ -122,7 +125,7 @@ OR = [
 ]
 
 SEQUENCE = SEQUENCE[
-  'SEQUENCE', L_SQUARE_BRACKET, CONSTRUCT_LIST, R_SQUARE_BRACKET
+  'SEQUENCE', L_SQUARE_BRACKET, PATTERN_LIST, R_SQUARE_BRACKET
 ]
 
 STRING = OR[
@@ -132,7 +135,8 @@ STRING_CHARACTER
 
 STRING_CHARACTER = OR[
   'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
+  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+  '0','1','2','3','4','5','6','7','8','9'
 ]
 
 NUMBER_STRING = OR[
@@ -153,6 +157,7 @@ Debugger.enabled = true
 Debugger.mode = 'console'
 
 var test_parser = new Parser(grammar)
+//tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 
 let endUserCode = `
 POINT_LIST=[
@@ -171,10 +176,10 @@ POINT=SEQUENCE[
 ]
 
 `
-let nodes = test_parser.parse(endUserCode)
-//debugger
+//let nodes = test_parser.parse(endUserCode)
+let tree = test_parser.parse(endUserCode)
+debugger
 //console.log('test')
-tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 
 </script>
 </body>
