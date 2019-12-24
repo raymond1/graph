@@ -19,20 +19,57 @@
 <script>
 class ParseViewer{
   constructor(treeNode, completedOperations){
+    this.rootTreeNode = treeNode
+    this.viewingIndex = -1
+    this.currentTreeNode = null
     this.completedOperations = completedOperations
+
     let button = document.createElement('button')
     button.setAttribute('type', 'button')
     let text = document.createTextNode('Highlight Next')
     button.appendChild(text)
     button.addEventListener('click', this.next.bind(this))
     treeNode.domElement.parentNode.insertBefore(button, treeNode.domElement.nextSibling)
-  }
-  getNodeWithId(id){
 
+    document.addEventListener('keydown', (event) =>{ 
+      if (event.keyCode == 78){
+        this.next()
+      }
+    })
   }
+  getTreeNodeWithId(baseTreeNode = this.rootTreeNode, id){
+    let treeNodeToReturn = null
+
+    if (baseTreeNode.node.id == id){
+      treeNodeToReturn = baseTreeNode
+    }else{
+      //is it one of the descendants?
+      let children = baseTreeNode.getChildren()
+      if (children.length > 0){
+        for (let i = 0; i < children.length; i++){
+          let treeNodeToReturn2 = this.getTreeNodeWithId(children[i], id)
+          if (treeNodeToReturn2){
+            treeNodeToReturn = treeNodeToReturn2
+            break
+          }
+        }
+      }
+    }
+    return treeNodeToReturn
+  }
+
   next(){
-    if (!currentNode){
-      currentNode = treeNode
+    //unhighlight if necessary
+    if (this.currentTreeNode){
+      this.currentTreeNode.unhighlight()
+    }
+
+    this.viewingIndex = this.viewingIndex+1
+    if (this.viewingIndex > this.completedOperations.length){
+      this.viewingIndex = -1
+    }else{
+      this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, this.completedOperations[this.viewingIndex])
+      this.currentTreeNode.highlight()
     }
   }
 }
@@ -41,6 +78,7 @@ class ParseViewer{
 //A Treenode is not the domElement that is clicked on
 class TreeNode{
   constructor(node, domElement){
+    this.children = []
     this.node = node
     this.domElement = domElement
     this.expanded = false
@@ -51,9 +89,7 @@ class TreeNode{
     let li = document.createElement('li')
     li.style.width = '100%'
     li.style.background = '#fff'
-    if (node == null){
-      debugger
-    }
+
     let nodeType = node.constructor.name
     let nodeTypeTextNode = document.createTextNode(nodeType)
     li.appendChild(nodeTypeTextNode)
@@ -73,10 +109,10 @@ class TreeNode{
         attribute.appendChild(attributeTextNode)
         if (Array.isArray(node[node.attributes[i]])){
           for (let j = 0; j < node[node.attributes[i]].length; j++){
-              new TreeNode(node[node.attributes[i]][j], attribute)
+              this.children.push(new TreeNode(node[node.attributes[i]][j], attribute))
           }
         }else if (typeof node[node.attributes[i]] == 'object'){
-          new TreeNode(node[node.attributes[i]], attribute)
+          this.children.push(new TreeNode(node[node.attributes[i]], attribute))
         }
         attributeList.appendChild(attribute)
       }
@@ -98,8 +134,14 @@ class TreeNode{
     }
   }
 */
-  attributesToString(){
-
+  highlight(){
+    this.domElement.style.background = "#ff0"
+  }
+  unhighlight(){
+    this.domElement.style.background = "#fff"
+  }
+  getChildren(){
+    return this.children
   }
 }
 
@@ -168,7 +210,7 @@ Debugger.mode = 'console'
 var test_parser = new Parser(grammar)
 
 tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
-let parseViewer = new ParseViewer(tree)
+let parseViewer = new ParseViewer(tree, test_parser.matchRecorder)
 
 let endUserCode = `
 POINT_LIST=[
@@ -189,9 +231,6 @@ POINT=SEQUENCE[
 `
 
 let tree2 = test_parser.parse(endUserCode)
-//debugger
-
-//console.log('test')
 
 </script>
 </body>

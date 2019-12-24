@@ -1,4 +1,5 @@
 function Node(parser){
+  this.id = Node.get_unique_id()
   this.parser = parser
   this.attributes = []
 
@@ -13,8 +14,23 @@ function Node(parser){
 
     this[attributeName] = value
   }
+  this.setAttribute('id', this.id)
 
+  this.getChildren = function(){
+    let children = []
+    for (let i = 0; i < this.attributes.length; i++){
+      if (typeof this[attributes[i]] == 'object'){
+        children.push(this[attributes[i]])
+      }else if (typeof this[attributes[i]] == 'array'){
+        for (let j = 0; j < this[attributes[i]].length; j++){
+          children.push(this[attributes[i]][j])
+        }
+      }
+    }
+    return children
+  }
 }
+Node.get_unique_id = Programming.getUniqueIDMaker()
 
 class RuleList extends Node{
   constructor(parser, rulesArray){
@@ -25,7 +41,7 @@ class RuleList extends Node{
   
   //produces rule nodes as long as they are found
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
     let matchedRules = []
     let ruleMatched = false
     let tempString = string
@@ -71,7 +87,7 @@ class Rule extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
     let matchInfo = this.pattern.match(string)
     if (matchInfo.matchFound){
       return {matchFound:true, matchLength: matchInfo.matchLength}
@@ -90,7 +106,7 @@ class RuleName extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let rule = this.parser.getRule(this.value)
     if (rule == null){
@@ -110,7 +126,7 @@ class Sequence extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     return this['pattern list'].match(string)
   }
@@ -126,7 +142,7 @@ class WSAllowBoth extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let numberOfLeadingWhitespaceCharacters = 0
     let numberOfTrailingWhitespaceCharacters = 0.
@@ -163,7 +179,7 @@ class Or extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     return this['pattern list'].match(string)
   }
@@ -179,7 +195,7 @@ class QuotedString extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let quotedString = '\'' + this['string'] + '\''
     
@@ -200,7 +216,7 @@ class AlphabeticalString extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let alphabeticalString = this['string']
     
@@ -220,7 +236,7 @@ class Pattern extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let matchInfo = this['inner pattern'].match(string)
     return matchInfo
@@ -238,7 +254,7 @@ class PatternList extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     if (this['pattern list type'] == 'or'){
       for (let i = 0; i < this['patterns'].length; i++){
@@ -284,7 +300,7 @@ class Multiple extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this['friendly node name'])
+    this.parser.matchRecorder.push(this.id)
 
     let totalMatchLength = 0
     let matchInfo = this.pattern.match(string)
