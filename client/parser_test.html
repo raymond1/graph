@@ -17,21 +17,44 @@
 <script src='parser.js'></script>
 <script src='debugger.js'></script>
 <script>
+class ParseViewer{
+  constructor(treeNode, completedOperations){
+    this.completedOperations = completedOperations
+    let button = document.createElement('button')
+    button.setAttribute('type', 'button')
+    let text = document.createTextNode('Highlight Next')
+    button.appendChild(text)
+    button.addEventListener('click', this.next.bind(this))
+    treeNode.domElement.parentNode.insertBefore(button, treeNode.domElement.nextSibling)
+  }
+  getNodeWithId(id){
 
+  }
+  next(){
+    if (!currentNode){
+      currentNode = treeNode
+    }
+  }
+}
 //Treenode connects nodes with domElements
 //A Treenode is not the node data it contains
 //A Treenode is not the domElement that is clicked on
 class TreeNode{
   constructor(node, domElement){
     this.node = node
+    this.domElement = domElement
     this.expanded = false
     let ul = document.createElement('ul')
     ul.style.border = '4px black solid'
+    ul.style.width = '100%'
+    ul.style.background = '#fff'
     let li = document.createElement('li')
+    li.style.width = '100%'
+    li.style.background = '#fff'
     if (node == null){
       debugger
     }
-    let nodeType = node.type
+    let nodeType = node.constructor.name
     let nodeTypeTextNode = document.createTextNode(nodeType)
     li.appendChild(nodeTypeTextNode)
     if (node.attributes.length > 0){
@@ -84,14 +107,8 @@ var grammar =
 
 `
 RULE_LIST = 
-[
-  RULE,
-  SEQUENCE
-  [
-    RULE,
-    ',',
-    RULE_LIST
-  ]
+MULTIPLE[
+  RULE
 ]
 
 RULE = SEQUENCE[
@@ -100,10 +117,7 @@ RULE = SEQUENCE[
   WS_ALLOW_BOTH[PATTERN]
 ]
 
-PATTERN_LIST = [
-PATTERN,
-PATTERN, ',', PATTERN_LIST
-]
+PATTERN_LIST = MULTIPLE[PATTERN]
 
 PATTERN = OR[
   QUOTED_STRING,
@@ -128,10 +142,7 @@ SEQUENCE = SEQUENCE[
   'SEQUENCE', L_SQUARE_BRACKET, PATTERN_LIST, R_SQUARE_BRACKET
 ]
 
-STRING = OR[
-SEQUENCE[STRING_CHARACTER,STRING],
-STRING_CHARACTER
-]
+STRING = MULTIPLE[STRING_CHARACTER]
 
 STRING_CHARACTER = OR[
   'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
@@ -139,14 +150,12 @@ STRING_CHARACTER = OR[
   '0','1','2','3','4','5','6','7','8','9'
 ]
 
-NUMBER_STRING = OR[
-  SEQUENCE[NUMBER_CHARACTER, NUMBER_STRING],
-  NUMBER_CHARACTER
-]
+NUMBER_STRING = MULTIPLE[NUMBER_CHARACTER]
 
 NUMBER_CHARACTER = OR[
   '0','1','2','3','4','5','6','7','8','9'
 ]
+
 `
 
 //built-ins: WS_ALLOW_BOTH
@@ -157,7 +166,9 @@ Debugger.enabled = true
 Debugger.mode = 'console'
 
 var test_parser = new Parser(grammar)
-//tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
+
+tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
+let parseViewer = new ParseViewer(tree)
 
 let endUserCode = `
 POINT_LIST=[
@@ -176,9 +187,10 @@ POINT=SEQUENCE[
 ]
 
 `
-//let nodes = test_parser.parse(endUserCode)
-let tree = test_parser.parse(endUserCode)
-debugger
+
+let tree2 = test_parser.parse(endUserCode)
+//debugger
+
 //console.log('test')
 
 </script>
