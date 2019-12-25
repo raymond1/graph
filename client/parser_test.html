@@ -6,6 +6,22 @@
 .expandable{
   color: #4a8;
 }
+
+html{
+  margin: 0;
+  padding: 0;
+}
+
+body{
+  margin: 0;
+  padding: 0;
+}
+
+ul{
+  margin:0;
+  /*padding: 0;*/
+}
+
 </style>
 </head>
 <body>
@@ -135,10 +151,16 @@ class TreeNode{
   }
 */
   highlight(){
-    this.domElement.style.background = "#ff0"
+    let ul = this.domElement.getElementsByTagName('ul')[0]
+    //ul.style.border = "thick #ff0 solid"
+    ul.style.backgroundColor = "#ff0"
+    ul.getElementsByTagName('li')[0].style.backgroundColor = "#ff0"
   }
   unhighlight(){
-    this.domElement.style.background = "#fff"
+    let ul = this.domElement.getElementsByTagName('ul')[0]
+    //ul.style.border = "thick #000 solid"
+    ul.style.backgroundColor = "#fff"
+    ul.getElementsByTagName('li')[0].style.backgroundColor = "#fff"
   }
   getChildren(){
     return this.children
@@ -209,7 +231,7 @@ Debugger.mode = 'console'
 
 var test_parser = new Parser(grammar)
 
-tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
+let tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 let parseViewer = new ParseViewer(tree, test_parser.matchRecorder)
 
 let endUserCode = `
