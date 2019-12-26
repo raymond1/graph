@@ -1,11 +1,16 @@
-function Node(parser){
-  this.id = Node.get_unique_id()
-  this.parser = parser
-  this.attributes = []
+let uniqueIdMaker = Programming.getUniqueIDMaker()
+class Node{
+  constructor(parser){
+    this.idCreator = uniqueIdMaker
+    this.parser = parser
+    this.attributes = []
+    this.setAttribute('id', this.idCreator())
+  }
+
 
   //If attribute exists, overwrite it
   //If attribute does not exist, create it
-  this.setAttribute = function(attributeName, value = null){
+  setAttribute(attributeName, value = null){
     if (this.attributes.indexOf(attributeName) > -1){
       
     }else{
@@ -14,9 +19,9 @@ function Node(parser){
 
     this[attributeName] = value
   }
-  this.setAttribute('id', this.id)
 
-  this.getChildren = function(){
+
+  getChildren(){
     let children = []
     for (let i = 0; i < this.attributes.length; i++){
       if (typeof this[attributes[i]] == 'object'){
@@ -29,8 +34,13 @@ function Node(parser){
     }
     return children
   }
+
+  //adds in more debugging capability
+  match(string){
+    this.parser.matchRecorder.push(this.id)
+  }
+
 }
-Node.get_unique_id = Programming.getUniqueIDMaker()
 
 class RuleList extends Node{
   constructor(parser, rulesArray){
@@ -41,7 +51,7 @@ class RuleList extends Node{
   
   //produces rule nodes as long as they are found
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
     let matchedRules = []
     let ruleMatched = false
     let tempString = string
@@ -87,7 +97,7 @@ class Rule extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
     let matchInfo = this.pattern.match(string)
     if (matchInfo.matchFound){
       return {matchFound:true, matchLength: matchInfo.matchLength}
@@ -106,7 +116,7 @@ class RuleName extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let rule = this.parser.getRule(this.value)
     if (rule == null){
@@ -126,7 +136,7 @@ class Sequence extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     return this['pattern list'].match(string)
   }
@@ -142,7 +152,7 @@ class WSAllowBoth extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let numberOfLeadingWhitespaceCharacters = 0
     let numberOfTrailingWhitespaceCharacters = 0.
@@ -179,7 +189,7 @@ class Or extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     return this['pattern list'].match(string)
   }
@@ -195,7 +205,7 @@ class QuotedString extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let quotedString = '\'' + this['string'] + '\''
     
@@ -216,7 +226,7 @@ class AlphabeticalString extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let alphabeticalString = this['string']
     
@@ -236,7 +246,7 @@ class Pattern extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let matchInfo = this['inner pattern'].match(string)
     return matchInfo
@@ -254,7 +264,7 @@ class PatternList extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     if (this['pattern list type'] == 'or'){
       for (let i = 0; i < this['patterns'].length; i++){
@@ -300,7 +310,7 @@ class Multiple extends Node{
   }
 
   match(string){
-    this.parser.matchRecorder.push(this.id)
+    super.match(string)
 
     let totalMatchLength = 0
     let matchInfo = this.pattern.match(string)
@@ -321,6 +331,7 @@ class Multiple extends Node{
 //In other words, the grammar that the parser needs to parse is passed into the constructor during the creation on the Parser object
 //Then, the parse function is run, taking in an input_string representing a small set of data given in the language specified by the language loaded by the Parser object during its construction
 class Parser{
+
   constructor(grammarString){
     this.runningGrammar = this.grammarize(grammarString)
     this.rules = this.getRules(this.runningGrammar)
@@ -416,6 +427,7 @@ class Parser{
   //There are actually two types of pattern lists: or and sequence.
   //This is because it is necessary to know the context of a pattern list in order to know how to interpret it properly later on
   grammarize_PATTERN_LIST(input_string, pattern_list_type){
+    
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
@@ -690,6 +702,8 @@ class Parser{
   //If input_string is a valid rule, return a rule node
   //If not valid, return null
   grammarize_RULE(input_string){
+    if (!input_string) return null
+
     var index_of_equals_sign = input_string.indexOf('=') 
     if (index_of_equals_sign < 0) return null
 
@@ -728,54 +742,69 @@ class Parser{
     return -1
   }
 
-
-
-  //If input_string is a valid rule list, return a rule list node, and its corresponding children
-  //If not valid, return null
-  grammarize_RULE_LIST(input_string){
-    //First, deal with the case there is only one rule
-    var single_rule = this.grammarize_RULE(input_string)
-
-    if (single_rule != null){
-      return [single_rule]
+  getNextString(string){
+    let i = 0;
+    let returnString = ''
+    for (i = 1; i < string.length; i++){
+      let tempString = string.substring(0, i)
+      if (Strings.contains_only(tempString, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
+        returnString = tempString
+      }
     }
+    return returnString
+  }
 
-    //The case when there is a rule followed by a list
-    //1)Trim whitespace
-    //2)Check if there are at least two equal signs
-    //3)Find the first equal sign
-    //4)Check if the string to the left of the first equal sign is a valid name
-    //5)Find the first left square bracket
-    //6)Find the matching right bracket
-    //7)Process everything from the name to the right bracket as one RULE
-    //8)Process everything to the right of the right bracket as another RULE_LIST
-
-    var trimmed_input_string = input_string.trim()
-    if (Strings.count_occurrences(trimmed_input_string, '=') < 2){
+  getNextRuleString(string){
+    let location_of_first_equals_sign = string.indexOf('=')
+    if (location_of_first_equals_sign < 1){
       return null
     }
 
-    var location_of_first_equals_sign = trimmed_input_string.indexOf('=')
-    var left_of_first_equals_sign = trimmed_input_string.substring(0, location_of_first_equals_sign)
-    var trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
+    let left_of_first_equals_sign = string.substring(0, location_of_first_equals_sign)
+    let trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
 
-    var rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
+    let rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
     if (rule_name == null){
       return null
     }
 
-    var location_of_first_left_square_bracket = trimmed_input_string.indexOf('[')
-    var location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(trimmed_input_string, location_of_first_left_square_bracket)
-    if (location_of_matching_right_square_bracket == -1){
-      return null
+    let location_of_first_left_square_bracket = string.indexOf('[')
+    if (location_of_first_left_square_bracket >= 0){ //if first left square bracket was found
+      let location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(string, location_of_first_left_square_bracket)
+      if (location_of_matching_right_square_bracket == -1){
+        return null
+      }
+  
+      let next_rule_string = string.substring(0, location_of_matching_right_square_bracket + 1)
+      return next_rule_string
+    }else{
+      let leadingSpaces = Strings.swallow(string.substring(location_of_first_equals_sign + 1), ' ')
+      let ruleName = Strings.swallow(string.substring(location_of_first_equals_sign + 1 + leadingSpaces.length), Parser.RULE_NAME_characters)
+      if (ruleName.length > 0){
+        return string.substring(0, location_of_first_equals_sign + leadingSpaces.length + ruleName.length + 1)
+      }
     }
+  }
 
-    var first_rule_string = trimmed_input_string.substring(0, location_of_matching_right_square_bracket + 1)
-    var first_rule = this.grammarize_RULE(first_rule_string)
-    if (first_rule == null){
-      return null
+  //If inputString is a valid rule list, return a rule list node, and its corresponding children
+  //If not valid, return null
+  grammarize_RULE_LIST(inputString){
+    if (inputString.length < 1) return null
+
+    let rules = []
+    let remainingString = inputString
+    
+    while(remainingString.length > 0){
+      let singleRuleString = this.getNextRuleString(remainingString)
+      let singleRule = this.grammarize_RULE(singleRuleString)
+      if (singleRule){
+        rules.push(singleRule)
+        remainingString = remainingString.substring(singleRuleString.length).trim()
+      }else{
+        return null //no valid rule list
+      }
     }
-
+/*
     var subsequent_rule_list_string = trimmed_input_string.substring(location_of_matching_right_square_bracket + 1, trimmed_input_string.length)
     var subsequent_rule_list = this.grammarize_RULE_LIST(subsequent_rule_list_string)
 
@@ -783,7 +812,8 @@ class Parser{
       return null
     }
     let concatenatedRules = [first_rule].concat(subsequent_rule_list)
-    var return_node = new RuleList(this,concatenatedRules)
+*/
+    var return_node = new RuleList(this,rules)
     return return_node
   }
 
@@ -818,12 +848,13 @@ class Parser{
   }
 
   //Returns the rule with the rule name ruleName
-  getRule(ruleName){    
+  getRule(ruleName){
+    /*
     //There is a special case when ruleName == 'RULE_NAME'
     if (ruleName == 'RULE_NAME'){
       return new Or(this, new PatternList(this,this.rules))
     }
-
+*/
     for (let i = 0; i < this.rules.length; i++){
       if (this.rules[i].name == ruleName){
         return this.rules[i]
@@ -842,11 +873,13 @@ class Parser{
   }
 }
 
+Parser.RULE_NAME_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 //A valid rule name consists of letters, numbers and underscores
 Parser.is_valid_RULE_NAME = function(input_string){
-  if (Strings.contains_only(input_string, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_')) return true
+  if (Strings.contains_only(input_string, Parser.RULE_NAME_characters)) return true
   return false
 }
+
 
 
 /*

@@ -124,7 +124,7 @@ Strings.contains_only = function(input_string, allowed_characters){
   return true
 }
 
-//Counts the
+//Counts the number of occurrences of character in input_string
 Strings.count_occurrences = function(input_string, character){
   var count = 0
 
@@ -134,4 +134,19 @@ Strings.count_occurrences = function(input_string, character){
   }
 
   return count
+}
+
+//Returns the longest substring starting at index 0 of input_string whose characters belong to character_list
+//For example, if input_string is 'test', and character list is 'et', then the string 'te' is returned because
+//the first two letters of test are found within the character list
+Strings.swallow = function(input_string, character_list){
+  let i = 0;
+  let returnString = ''
+  for (i = 1; i < input_string.length + 1; i++){
+    let tempString = input_string.substring(0, i)
+    if (Strings.contains_only(tempString, character_list)){
+      returnString = tempString
+    }
+  }
+  return returnString
 }

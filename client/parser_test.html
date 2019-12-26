@@ -85,7 +85,9 @@ class ParseViewer{
       this.viewingIndex = -1
     }else{
       this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, this.completedOperations[this.viewingIndex])
-      this.currentTreeNode.highlight()
+      if (this.currentTreeNode){
+        this.currentTreeNode.highlight()
+      }
     }
   }
 }
@@ -211,7 +213,8 @@ STRING = MULTIPLE[STRING_CHARACTER]
 STRING_CHARACTER = OR[
   'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
   'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-  '0','1','2','3','4','5','6','7','8','9'
+  '0','1','2','3','4','5','6','7','8','9',
+  '_'
 ]
 
 NUMBER_STRING = MULTIPLE[NUMBER_CHARACTER]
@@ -220,6 +223,7 @@ NUMBER_CHARACTER = OR[
   '0','1','2','3','4','5','6','7','8','9'
 ]
 
+RULE_NAME = STRING
 `
 
 //built-ins: WS_ALLOW_BOTH
@@ -230,9 +234,8 @@ Debugger.enabled = true
 Debugger.mode = 'console'
 
 var test_parser = new Parser(grammar)
-
 let tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
-let parseViewer = new ParseViewer(tree, test_parser.matchRecorder)
+//let parseViewer = new ParseViewer(tree, test_parser.matchRecorder)
 
 let endUserCode = `
 POINT_LIST=[
@@ -252,8 +255,8 @@ POINT=SEQUENCE[
 
 `
 
-let tree2 = test_parser.parse(endUserCode)
-
+//let tree2 = test_parser.parse(endUserCode)
+debugger
 </script>
 </body>
 </html>
