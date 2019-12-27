@@ -22,19 +22,25 @@ ul{
   /*padding: 0;*/
 }
 
+#debugArea{
+  position: fixed;
+  top: 0;
+}
 </style>
 </head>
 <body>
   <div id="test">
 
   </div>
+  <div id="debugArea"></div>
 <script src='programming.js'></script>
 <script src='strings.js'></script>
 <script src='parser.js'></script>
 <script src='debugger.js'></script>
 <script>
 class ParseViewer{
-  constructor(treeNode, completedOperations){
+  constructor(debugArea, treeNode, completedOperations){
+    this.debugArea = debugArea
     this.rootTreeNode = treeNode
     this.viewingIndex = -1
     this.currentTreeNode = null
@@ -53,6 +59,7 @@ class ParseViewer{
       }
     })
   }
+
   getTreeNodeWithId(baseTreeNode = this.rootTreeNode, id){
     let treeNodeToReturn = null
 
@@ -84,7 +91,14 @@ class ParseViewer{
     if (this.viewingIndex > this.completedOperations.length){
       this.viewingIndex = -1
     }else{
-      this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, this.completedOperations[this.viewingIndex])
+      let completedOperation = this.completedOperations[this.viewingIndex]
+      let nodeId = this.completedOperations[this.viewingIndex]
+      if (typeof completedOperation == 'object'){
+        nodeId = completedOperation.id
+        this.debugArea.innerHTML = JSON.stringify(completedOperation)
+      }
+
+      this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, nodeId)
       if (this.currentTreeNode){
         this.currentTreeNode.highlight()
       }
@@ -230,12 +244,9 @@ RULE_NAME = STRING
 //left and right angle brackets
 //COMMA
 //empty
-Debugger.enabled = true
-Debugger.mode = 'console'
 
 var test_parser = new Parser(grammar)
 let tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
-//let parseViewer = new ParseViewer(tree, test_parser.matchRecorder)
 
 let endUserCode = `
 POINT_LIST=[
@@ -254,9 +265,11 @@ POINT=SEQUENCE[
 ]
 
 `
+let tree2 = test_parser.parse(endUserCode)
+let debugArea = document.getElementById('debugArea')
 
-//let tree2 = test_parser.parse(endUserCode)
-debugger
+let parseViewer = new ParseViewer(debugArea, tree, test_parser.matchRecorder)
+
 </script>
 </body>
 </html>

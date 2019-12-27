@@ -38,8 +38,16 @@ class Node{
   //adds in more debugging capability
   match(string){
     this.parser.matchRecorder.push(this.id)
+    if (this.parser.matchRecorder.length == 15){
+      debugger
+    }
   }
 
+  saveReturnValue(object){
+    object.id = this.id
+    this.parser.matchRecorder.push(object)
+    return object
+  }
 }
 
 class RuleList extends Node{
@@ -76,7 +84,7 @@ class RuleList extends Node{
         //string = string.substring...
         matchedRules.push(newNode)
       }else{
-        return {matchFound: false}
+        return this.saveReturnValue({matchFound: false})
       }
       /*
       return {matchFound: true, matchLength: matchInformation.matchLength}
@@ -84,7 +92,7 @@ class RuleList extends Node{
       continue = false*/
     }while(ruleMatched)
 
-    return {matchFound: true, matchedRules}
+    return this.saveReturnValue({matchFound: true, matchedRules})
   }
 }
 
@@ -100,9 +108,9 @@ class Rule extends Node{
     super.match(string)
     let matchInfo = this.pattern.match(string)
     if (matchInfo.matchFound){
-      return {matchFound:true, matchLength: matchInfo.matchLength}
+      return this.saveReturnValue({matchFound:true, matchLength: matchInfo.matchLength})
     }
-    return {matchFound: false}
+    return this.saveReturnValue({matchFound: false})
   }
 }
 
@@ -120,10 +128,10 @@ class RuleName extends Node{
 
     let rule = this.parser.getRule(this.value)
     if (rule == null){
-      return {matchFound: false}
+      return this.saveReturnValue({matchFound: false})
     }
     else{
-      return rule.match(string)
+      return this.saveReturnValue(rule.match(string))
     }
   }
 }
@@ -138,7 +146,7 @@ class Sequence extends Node{
   match(string){
     super.match(string)
 
-    return this['pattern list'].match(string)
+    return this.saveReturnValue(this['pattern list'].match(string))
   }
 }
 
@@ -169,9 +177,9 @@ class WSAllowBoth extends Node{
       for (i = 0; Strings.is_whitespace(afterInnerPattern.charAt(i)); i++){
       }
       numberOfTrailingWhitespaceCharacters = i
-      return {matchFound: true, matchLength: numberOfLeadingWhitespaceCharacters + innerPatternMatchInfo.matchLength + numberOfTrailingWhitespaceCharacters}
+      return this.saveReturnValue({matchFound: true, matchLength: numberOfLeadingWhitespaceCharacters + innerPatternMatchInfo.matchLength + numberOfTrailingWhitespaceCharacters})
     }else{
-      return {matchFound: false}
+      return this.saveReturnValue({matchFound: false})
     }
     //is it just the pattern with no white space at the front?
     //is there whitespace in the front?
@@ -191,7 +199,7 @@ class Or extends Node{
   match(string){
     super.match(string)
 
-    return this['pattern list'].match(string)
+    return this.saveReturnValue(this['pattern list'].match(string))
   }
 }
 
@@ -210,9 +218,9 @@ class QuotedString extends Node{
     let quotedString = '\'' + this['string'] + '\''
     
     if (string.substring(0, quotedString.length) == quotedString){
-      return {matchFound: true, matchLength: quotedString.length}
+      return this.saveReturnValue({matchFound: true, matchLength: quotedString.length})
     }else{
-      return {matchFound: false}
+      return this.saveReturnValue({matchFound: false})
     }
   }
 }
@@ -231,9 +239,9 @@ class AlphabeticalString extends Node{
     let alphabeticalString = this['string']
     
     if (string.substring(0, alphabeticalString.length) == alphabeticalString){
-      return {matchFound: true, matchLength: alphabeticalString.length}
+      return this.saveReturnValue({matchFound: true, matchLength: alphabeticalString.length})
     }else{
-      return {matchFound: false}
+      return this.saveReturnValue({matchFound: false})
     }
   }
 }
@@ -249,7 +257,7 @@ class Pattern extends Node{
     super.match(string)
 
     let matchInfo = this['inner pattern'].match(string)
-    return matchInfo
+    return this.saveReturnValue(matchInfo)
   }
 }
 
@@ -271,7 +279,7 @@ class PatternList extends Node{
         let matchInfo = this['patterns'][i].match(string)
 
         if (matchInfo.matchFound){
-          return matchInfo
+          return this.saveReturnValue(matchInfo)
         }
       }
     }else if (this['pattern list type'] == 'sequence'){
@@ -284,7 +292,7 @@ class PatternList extends Node{
 
         matchInfoArray.push(matchInfo) 
         if (!matchInfo.matchFound){
-          return {matchFound: false}
+          return this.saveReturnValue({matchFound: false})
         }else{
           tempString = tempString.substring(matchInfo.length)
         }
@@ -294,11 +302,11 @@ class PatternList extends Node{
       for (let i = 0; i < matchInfoArray.length; i++){
         totalMatchLength += matchInfoArray[i].matchLength
       }
-      return {matchFound: true, matchLength: totalMatchLength}
+      return this.saveReturnValue({matchFound: true, matchLength: totalMatchLength})
 
     }
 
-    return {matchFound: false}
+    return this.saveReturnValue({matchFound: false})
   }
 }
 
@@ -321,9 +329,9 @@ class Multiple extends Node{
     }
 
     if (totalMatchLength == 0){
-      return {matchFound: false}
+      return this.saveReturnValue({matchFound: false})
     }
-    return {matchFound: true, matchLength: totalMatchLength}
+    return this.saveReturnValue({matchFound: true, matchLength: totalMatchLength})
   }
 }
 //Usage: let parser = new Parser(grammar_string)
@@ -427,7 +435,6 @@ class Parser{
   //There are actually two types of pattern lists: or and sequence.
   //This is because it is necessary to know the context of a pattern list in order to know how to interpret it properly later on
   grammarize_PATTERN_LIST(input_string, pattern_list_type){
-    
     var trimmed_input_string = input_string.trim()
     var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
     if (single_pattern != null){
@@ -597,6 +604,7 @@ class Parser{
     }
     if (input_string.charAt(0) != '\'') return null
     if (input_string.charAt(input_string.length -1) != '\'') return null
+    if (Strings.count_occurrences(input_string, '\'') > 2) return null
 
     var middle_string = input_string.substring(1, input_string.length -1)
     
@@ -618,6 +626,7 @@ class Parser{
       return null
     }
 
+    if (location_of_matching_right_square_bracket + 1 != trimmed_input_string.length) return null
     var string_between_two_square_brackets = trimmed_input_string.substring(location_of_first_left_square_bracket + 1, location_of_matching_right_square_bracket)
 
     var inner_pattern = this.grammarize_PATTERN(string_between_two_square_brackets)
