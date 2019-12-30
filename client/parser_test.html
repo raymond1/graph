@@ -54,8 +54,11 @@ class ParseViewer{
     treeNode.domElement.parentNode.insertBefore(button, treeNode.domElement.nextSibling)
 
     document.addEventListener('keydown', (event) =>{ 
-      if (event.keyCode == 78){
+      if (event.keyCode == 78){//n
         this.next()
+      }
+      else if (event.keyCode == 77){//m
+        this.showFirstNonmatch()
       }
     })
   }
@@ -103,6 +106,17 @@ class ParseViewer{
         this.currentTreeNode.highlight()
       }
     }
+  }
+  showFirstNonmatch(){
+    for (let i = 0; i < this.completedOperations.length; i++){
+      if (typeof this.completedOperations[i] == 'object'){
+        if (this.completedOperations[i].matchFound == false){
+          this.debugArea.innerHTML = i
+          break
+        }
+      }
+    }
+
   }
 }
 //Treenode connects nodes with domElements
@@ -197,7 +211,20 @@ RULE = SEQUENCE[
   WS_ALLOW_BOTH[PATTERN]
 ]
 
-PATTERN_LIST = MULTIPLE[PATTERN]
+PATTERN_LIST = OR[
+  SEQUENCE[
+    PATTERN,
+    MULTIPLE[
+      SEQUENCE
+      [
+        ',',
+        PATTERN
+      ]
+    ]
+  ]
+  ,
+  PATTERN
+]
 
 PATTERN = OR[
   QUOTED_STRING,
@@ -228,7 +255,8 @@ STRING_CHARACTER = OR[
   'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
   'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
   '0','1','2','3','4','5','6','7','8','9',
-  '_'
+  '_',
+  ' '
 ]
 
 NUMBER_STRING = MULTIPLE[NUMBER_CHARACTER]

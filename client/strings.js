@@ -38,11 +38,8 @@ Strings.find_earliest_matching_string_index = function(haystack, list_of_needles
 
   //assumes there is at least one needle
   var found_index = -1
-  var matching_string = list_of_needles[0]
   var found = false
-  var number_of_matches = 0;
 
-  var matches = []
   for (var i = 0; i < list_of_needles.length; i++){
     var index_of_needle = haystack.indexOf(list_of_needles[i])
 
@@ -97,6 +94,7 @@ Strings.index_preceded_by_whitespace = function(input_string, index){
   return true
 }
 
+//Takes in an array of strings and returns the longest one
 //Returns {'error': true/false, 'longest string': string}
 //Assume that there is at least one string
 Strings.get_longest_string = function(array_of_strings){
@@ -136,17 +134,35 @@ Strings.count_occurrences = function(input_string, character){
   return count
 }
 
-//Returns the longest substring starting at index 0 of input_string whose characters belong to character_list
+//operates in two modes, depending on the type of JavaScript object passed in as the variable conditionOrString
+//Mode 1, when conditionOrString is a string:
+//Returns the longest substring starting at index 0 of input_string whose characters belong to conditionOrString
 //For example, if input_string is 'test', and character list is 'et', then the string 'te' is returned because
 //the first two letters of test are found within the character list
-Strings.swallow = function(input_string, character_list){
+
+//Mode 2, when conditionOrString is a function
+//
+Strings.swallow = function(input_string, conditionOrString){
   let i = 0;
   let returnString = ''
   for (i = 1; i < input_string.length + 1; i++){
     let tempString = input_string.substring(0, i)
-    if (Strings.contains_only(tempString, character_list)){
-      returnString = tempString
+    if (typeof conditionOrString == 'string'){
+      if (Strings.contains_only(tempString, conditionOrString)){
+        returnString = tempString
+      }
+      else{
+        break
+      }
+    }else if (typeof conditionOrString == 'function'){
+      if (conditionOrString(tempString)){
+        returnString = tempString
+      }
+      else{
+        break
+      }
     }
   }
-  return returnString
+  return returnString  
 }
+

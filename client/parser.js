@@ -38,9 +38,6 @@ class Node{
   //adds in more debugging capability
   match(string){
     this.parser.matchRecorder.push(this.id)
-    if (this.parser.matchRecorder.length == 15){
-      debugger
-    }
   }
 
   saveReturnValue(object){
@@ -341,176 +338,201 @@ class Multiple extends Node{
 class Parser{
 
   constructor(grammarString){
+    this.validStringCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_= '
+    this.validRuleNameCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
     this.runningGrammar = this.grammarize(grammarString)
     this.rules = this.getRules(this.runningGrammar)
     this.matchRecorder = [] //collects the names of the classes whose match functions were run
   }
 
-  //Returns true if it starts with an OR
-  string_starts_with_OR(input_string){
-    var location_of_first_left_bracket = input_string.indexOf('[')
-    if (location_of_first_left_bracket < 0) return false
+  //If string starts with a fixed string X, followed by optional empty space and then [ and then a matching right square bracket ] then return the string
+  //Otherwise, return the empty string
+  headMatchXWithBrackets(string, X){
+    var location_of_first_left_bracket = string.indexOf('[')
+    if (location_of_first_left_bracket < 0) return ''
 
-    var left_of_first_left_bracket = input_string.substring(0,location_of_first_left_bracket).trim()
-    if (left_of_first_left_bracket== '' || left_of_first_left_bracket == 'OR'){
-      if (this.get_matching_right_square_bracket(input_string,location_of_first_left_bracket) > -1){
-        return true
-      }
-    }
-
-    return false
-  }
-
-  string_starts_with_SEQUENCE(input_string){
-    return this.string_starts_with_X_with_brackets(input_string, 'SEQUENCE')
-  }
-
-  string_starts_with_WS_ALLOW_BOTH(input_string){
-    return this.string_starts_with_X_with_brackets(input_string, 'WS_ALLOW_BOTH')
-  }
-
-  //Returns true if input_string starts with a fixed string X, followed by optional empty space and then [ and then a matching right square bracket ]
-  string_starts_with_X_with_brackets(input_string, X){
-    var location_of_first_left_bracket = input_string.indexOf('[')
-    if (location_of_first_left_bracket < 0) return false
-
-    var left_of_first_left_bracket = input_string.substring(0,location_of_first_left_bracket).trim()
+    var left_of_first_left_bracket = string.substring(0,location_of_first_left_bracket).trim()
     if (left_of_first_left_bracket == X){
-      if (this.get_matching_right_square_bracket(input_string,location_of_first_left_bracket) > -1){
-        return true
+      let indexOfRightMatchingSquareBracket = this.get_matching_right_square_bracket(string,location_of_first_left_bracket)
+
+      if (indexOfRightMatchingSquareBracket > -1){
+        return string.substring(0,indexOfRightMatchingSquareBracket+1)
       }
     }
 
     return false
   }
 
-  string_starts_with_RULE_NAME(input_string){
-    if (Parser.is_valid_RULE_NAME(input_string.charAt(0))) return true
-
-    return false
-  }
-
-  get_first_top_level_right_square_bracket(input_string){
-    var first_left_square_bracket = input_string.indexOf('[')
-    var matching_right_bracket_location = this.get_matching_right_square_bracket(input_string, first_left_square_bracket)
-
-    return matching_right_bracket_location
-  }
-
-  //given an input string containing a right square bracket(indicated by its location in input_string as offset)
-  //Is the string following offset one that contains whitespace and then a comma?
-  is_followed_by_optional_whitespace_and_then_a_comma(input_string, offset){
-    var first_comma_location = input_string.indexOf(',', offset)
-    if (first_comma_location < 0){
-      return false
+  //Returns the or construct portion of a string if found, or the empty string if not found
+  //The string must be at the beginning of the string
+  headMatchOr(string){
+    let matchWithOrKeyword = this.headMatchXWithBrackets(string, 'OR')
+    if (matchWithOrKeyword){
+      return matchWithOrKeyword
     }
 
-    var string_from_right_square_bracket_to_first_comma_location = input_string.substring(offset+1, first_comma_location)
-    if (string_from_right_square_bracket_to_first_comma_location == '' || !Strings.contains_non_whitespace_character(string_from_right_square_bracket_to_first_comma_location)){
-      return true
+    let matchWithNoBrackets = this.headMatchXWithBrackets(string, '')
+    if (matchWithNoBrackets){
+      return matchWithNoBrackets
     }
-    return false
+    return ''
   }
 
-  string_starts_with_QUOTED_STRING(input_string){
-    if (Strings.count_occurrences(input_string, '\'') >= 2){
-      return true
+  headMatchSequence(string){
+    return this.headMatchXWithBrackets(string, 'SEQUENCE')
+  }
+
+  headMatchWSAllowBoth(string){
+    return this.headMatchXWithBrackets(string, 'WS_ALLOW_BOTH')
+  }
+
+
+  headMatchRuleName(string){
+    let ruleNameCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
+    let length = 0
+    //A valid rule name consists of letters, numbers and underscores
+    for (let i = 0; i < string.length;i++){
+      if (Strings.contains_only(string.substring(i,i+1), ruleNameCharacters)){
+        length = length + 1
+      }
+      else{
+        break
+      }
+    }
+    return string.substring(0,length)
+  }
+
+  headMatchQuotedString(input_string){
+    if (input_string.length < 1){
+      return ''
     }
 
-    return false
+    if (input_string.charAt(0) != '\''){
+      return ''
+    }
+
+    let stringAfterFirstQuote = input_string.substring(1)
+    let stringCharacters = Strings.swallow(stringAfterFirstQuote, this.validStringCharacters)
+    if (stringCharacters.length < 1){
+      return ''
+    }
+    
+    if (stringAfterFirstQuote.length < 1 + stringCharacters.length){
+      //not long enough string for there to have a second quote
+      return ''
+    }
+
+    let secondQuote = stringAfterFirstQuote.charAt(stringCharacters.length)
+    if (secondQuote !== '\''){
+      return ''
+    }
+    return input_string.substring(0, 1 + stringCharacters.length + 1)
+
   }
 
-  get_first_construct_type(input_string){
-    if (this.string_starts_with_OR(input_string)) return 'or'
-    else if (this.string_starts_with_SEQUENCE(input_string)) return 'sequence'
-    else if (this.string_starts_with_WS_ALLOW_BOTH(input_string)) return 'ws allow both'
-    else if (this.string_starts_with_RULE_NAME(input_string)) return 'rule name'
-    else if (this.string_starts_with_QUOTED_STRING(input_string)) return 'quoted string'
-    else return null
+  //matches a rule(not just a rule name, the entire rulename = pattern)
+  headMatchRule(string){
+    let location_of_first_equals_sign = string.indexOf('=')
+    if (location_of_first_equals_sign < 1){
+      return ''
+    }
+
+    let left_of_first_equals_sign = string.substring(0, location_of_first_equals_sign)
+    let trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
+
+    let rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
+    if (rule_name == null){
+      return ''
+    }
+
+    let location_of_first_left_square_bracket = string.indexOf('[')
+    if (location_of_first_left_square_bracket >= 0){ //if first left square bracket was found
+      let location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(string, location_of_first_left_square_bracket)
+      if (location_of_matching_right_square_bracket == -1){
+        return ''
+      }
+  
+      let next_rule_string = string.substring(0, location_of_matching_right_square_bracket + 1)
+      return next_rule_string
+    }else{
+      let leadingWhitespace = Strings.swallow(string.substring(location_of_first_equals_sign + 1), Strings.whitespace_characters)
+      let ruleName = Strings.swallow(string.substring(location_of_first_equals_sign + 1 + leadingWhitespace.length), this.validRuleNameCharacters)
+      if (ruleName.length > 0){
+        return string.substring(0, location_of_first_equals_sign + leadingWhitespace.length + ruleName.length + 1)
+      }
+    }
   }
 
+  headMatchMultiple(string){
+    return this.headMatchXWithBrackets(string, 'MULTIPLE')
+  }
+
+  //If the string starts with one of the pattern strings for or, sequence, quoted string, ws allow both or rule name,
+  //return the string containing up to the first pattern string
+  //Returns '' if no valid next pattern string is found
+  headMatchPattern(string){
+    let patternString = this.headMatchOr(string)
+    if (patternString){
+      return patternString
+    }
+
+    patternString = this.headMatchSequence(string)
+    if (patternString){
+      return patternString
+    }
+
+    patternString = this.headMatchQuotedString(string)
+    if (patternString){
+      return patternString
+    }
+
+    patternString = this.headMatchWSAllowBoth(string)
+    if (patternString){
+      return patternString
+    }
+
+    patternString = this.headMatchRuleName(string)
+    if (patternString){
+      return patternString
+    }
+
+    return ''
+  }
+
+  //A pattern list is a set of comma-separated patterns
   //RULE_NAME1,RULE_NAME2, OR[...], SEQUENCE[], WS_ALLOW_BOTH[...], [...]
   //PATTERN
   //PATTERN, PATTERN_LIST
   //There are actually two types of pattern lists: or and sequence.
   //This is because it is necessary to know the context of a pattern list in order to know how to interpret it properly later on
-  grammarize_PATTERN_LIST(input_string, pattern_list_type){
-    var trimmed_input_string = input_string.trim()
-    var single_pattern = this.grammarize_PATTERN(trimmed_input_string)
-    if (single_pattern != null){
-      var new_node = new PatternList(this, [single_pattern], pattern_list_type)
-      return new_node
+
+  grammarize_PATTERN_LIST(string, pattern_list_type){
+    let patterns = []
+    let tempString = string.trim()
+    while(tempString != ''){
+      let nextPatternString = this.headMatchPattern(tempString)
+      if (nextPatternString == ''){
+        return null
+      }
+      else{
+        let singlePattern = this.grammarize_PATTERN(nextPatternString)
+        if (singlePattern){
+          patterns.push(singlePattern)
+        }
+        tempString = tempString.substring(nextPatternString.length)
+        tempString = tempString.trim()
+
+        //Skip a comma with leading whitespace if necessary
+        if (tempString.charAt(0) == ','){
+          tempString = tempString.substring(1).trim()
+        }
+      }
     }
 
-    var construct_type = this.get_first_construct_type(trimmed_input_string)
-    if (construct_type == 'or'||construct_type == 'sequence'||construct_type == 'ws allow both'){
-      var first_top_level_right_square_bracket = this.get_first_top_level_right_square_bracket(trimmed_input_string)
-
-      var first_pattern_string = trimmed_input_string.substring(0, first_top_level_right_square_bracket + 1)
-
-      var first_pattern
-      if (construct_type == 'or'){
-        first_pattern = this.grammarize_OR(first_pattern_string)
-      }else if (construct_type == 'sequence'){
-        first_pattern = this.grammarize_SEQUENCE(first_pattern_string)
-      }else if (construct_type == 'ws allow both'){
-        first_pattern = this.grammarize_WS_ALLOW_BOTH(first_pattern_string)
-      }
-
-      if (first_pattern == null){
-        return null
-      }
-
-      var location_of_comma_after_first_pattern = trimmed_input_string.indexOf(',', first_top_level_right_square_bracket)
-      if (location_of_comma_after_first_pattern < 0){
-        return null
-      }
-      var string_after_first_pattern = trimmed_input_string.substring(location_of_comma_after_first_pattern + 1, trimmed_input_string.length)
-
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(string_after_first_pattern.trim(), pattern_list_type)
-      if (subsequent_pattern_list == null){
-        return null
-      }
-
-      var new_node = new PatternList(this, [first_pattern].concat(subsequent_pattern_list), pattern_list_type)
-      return new_node
-    }else if (construct_type == 'rule name'){
-      var location_of_first_comma = trimmed_input_string.indexOf(',')
-      if (location_of_first_comma < 0){
-        return null
-      }
-
-      var trimmed_string_from_beginning_to_first_comma = trimmed_input_string.substring(0,location_of_first_comma).trim()
-
-      var first_pattern = this.grammarize_RULE_NAME(trimmed_string_from_beginning_to_first_comma)
-      if (first_pattern == null){
-        return null
-      }
-
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(location_of_first_comma + 1, trimmed_input_string.length), pattern_list_type)
-      if (subsequent_pattern_list == null){
-        return null
-      }
-
-      var new_node = new PatternList(this, [first_pattern].concat(subsequent_pattern_list), pattern_list_type)
-      return new_node
-    }
-    else if (construct_type == 'quoted string'){
-      var location_of_second_quote = trimmed_input_string.indexOf('\'',1)
-      var quoted_string_node = this.grammarize_QUOTED_STRING(trimmed_input_string.substring(0,location_of_second_quote + 1))
-      if (quoted_string_node == null) return null
-
-      var first_comma_after_second_quote = trimmed_input_string.indexOf(',',location_of_second_quote)
-      if (first_comma_after_second_quote < 0) return null
-
-      var subsequent_pattern_list = this.grammarize_PATTERN_LIST(trimmed_input_string.substring(first_comma_after_second_quote + 1, trimmed_input_string.length), pattern_list_type)
-
-      if (subsequent_pattern_list == null){
-        return null
-      }
-
-      var new_node = new PatternList(this,[quoted_string_node].concat(subsequent_pattern_list), pattern_list_type)
-      return new_node
+    if (patterns.length == 1){
+      return patterns[0]
+    }else if (patterns.length > 0){
+      return new PatternList(this, patterns, pattern_list_type)
     }
     return null
   }
@@ -534,7 +556,7 @@ class Parser{
     
     var string_in_between_square_brackets = trimmed_string.substring(location_of_first_left_bracket + 1, location_of_last_right_bracket)
 
-    var patternList = this.grammarize_PATTERN_LIST(string_in_between_square_brackets, 'sequence')
+    var patternList = this.grammarize_PATTERN_LIST(string_in_between_square_brackets.trim(), 'sequence')
     if (patternList != null){
       var new_node = new Sequence(this,patternList)
       return new_node
@@ -669,40 +691,43 @@ class Parser{
 
   grammarize_PATTERN(input_string){
     var trimmed_input_string = input_string.trim()
-    var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
-    if (quoted_string != null){
-      return new Pattern(this,quoted_string, 'quoted string')
+    if (this.headMatchQuotedString(trimmed_input_string)){
+      var quoted_string = this.grammarize_QUOTED_STRING(trimmed_input_string)
+      if (quoted_string != null){
+        return quoted_string
+      }  
+    }else if (this.headMatchOr(trimmed_input_string)){
+      var or_construct = this.grammarize_OR(trimmed_input_string)
+      if (or_construct != null){
+        return or_construct
+      }  
+    }else if (this.headMatchSequence(trimmed_input_string)){
+      var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
+      if (sequence_construct != null){
+        return sequence_construct
+      }  
+    }else if (this.headMatchWSAllowBoth(trimmed_input_string)){
+      var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
+      if (ws_allow_both != null){
+        return ws_allow_both
+      }  
+    }else if (this.headMatchMultiple(trimmed_input_string)){
+      var multiple = this.grammarize_MULTIPLE(trimmed_input_string)
+      if (multiple != null){
+        return multiple
+      }  
+    }else if (this.headMatchRuleName(trimmed_input_string)){
+      var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
+      if (rule_name != null){
+        return rule_name
+      }  
     }
 
-    var rule_name = this.grammarize_RULE_NAME(trimmed_input_string)
-    if (rule_name != null){
-      return new Pattern(this,rule_name, 'rule name')
-    }
-
-    var or_construct = this.grammarize_OR(trimmed_input_string)
-    if (or_construct != null){
-      return new Pattern(this,or_construct, 'or')
-    }
-
-    var sequence_construct = this.grammarize_SEQUENCE(trimmed_input_string)
-    if (sequence_construct != null){
-      return new Pattern(this,sequence_construct, 'sequence')
-    }
-
-    var ws_allow_both = this.grammarize_WS_ALLOW_BOTH(trimmed_input_string)
-    if (ws_allow_both != null){
-      return new Pattern(this,ws_allow_both, 'ws allow both')
-    }
-
-    var multiple = this.grammarize_MULTIPLE(trimmed_input_string)
-    if (multiple != null){
-      return new Pattern(this,multiple, 'multiple')
-    }
     return null
   }
 
 
-
+  //RULE = SEQUENCE[\n WS_ALLOW_BOTH[RULE_NAME],\n '=',\n WS_ALLOW_BOTH[PATTERN]\n]
   //RULE = SEQUENCE[
   //WS_ALLOW_BOTH[RULE_NAME],
   //'=',
@@ -751,50 +776,6 @@ class Parser{
     return -1
   }
 
-  getNextString(string){
-    let i = 0;
-    let returnString = ''
-    for (i = 1; i < string.length; i++){
-      let tempString = string.substring(0, i)
-      if (Strings.contains_only(tempString, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789')){
-        returnString = tempString
-      }
-    }
-    return returnString
-  }
-
-  getNextRuleString(string){
-    let location_of_first_equals_sign = string.indexOf('=')
-    if (location_of_first_equals_sign < 1){
-      return null
-    }
-
-    let left_of_first_equals_sign = string.substring(0, location_of_first_equals_sign)
-    let trimmed_left_of_first_equals_sign = left_of_first_equals_sign.trim()
-
-    let rule_name = this.grammarize_RULE_NAME(trimmed_left_of_first_equals_sign)
-    if (rule_name == null){
-      return null
-    }
-
-    let location_of_first_left_square_bracket = string.indexOf('[')
-    if (location_of_first_left_square_bracket >= 0){ //if first left square bracket was found
-      let location_of_matching_right_square_bracket = this.get_matching_right_square_bracket(string, location_of_first_left_square_bracket)
-      if (location_of_matching_right_square_bracket == -1){
-        return null
-      }
-  
-      let next_rule_string = string.substring(0, location_of_matching_right_square_bracket + 1)
-      return next_rule_string
-    }else{
-      let leadingSpaces = Strings.swallow(string.substring(location_of_first_equals_sign + 1), ' ')
-      let ruleName = Strings.swallow(string.substring(location_of_first_equals_sign + 1 + leadingSpaces.length), Parser.RULE_NAME_characters)
-      if (ruleName.length > 0){
-        return string.substring(0, location_of_first_equals_sign + leadingSpaces.length + ruleName.length + 1)
-      }
-    }
-  }
-
   //If inputString is a valid rule list, return a rule list node, and its corresponding children
   //If not valid, return null
   grammarize_RULE_LIST(inputString){
@@ -804,7 +785,7 @@ class Parser{
     let remainingString = inputString
     
     while(remainingString.length > 0){
-      let singleRuleString = this.getNextRuleString(remainingString)
+      let singleRuleString = this.headMatchRule(remainingString)
       let singleRule = this.grammarize_RULE(singleRuleString)
       if (singleRule){
         rules.push(singleRule)
@@ -831,7 +812,7 @@ class Parser{
     var return_node = this.grammarize_RULE_LIST(input_string)
 
     if (return_node == null){
-      console.log('Grammar is empty or there was an error in your grammar.')
+      console.log('Grammar is empty or there was an error in your grammar. Or, there is an error in this parser.')
     }
     return return_node
   }
@@ -882,12 +863,6 @@ class Parser{
   }
 }
 
-Parser.RULE_NAME_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
-//A valid rule name consists of letters, numbers and underscores
-Parser.is_valid_RULE_NAME = function(input_string){
-  if (Strings.contains_only(input_string, Parser.RULE_NAME_characters)) return true
-  return false
-}
 
 
 
