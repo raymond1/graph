@@ -25,6 +25,7 @@ ul{
 #debugArea{
   position: fixed;
   top: 0;
+  background: #f0f;
 }
 </style>
 </head>
@@ -41,6 +42,8 @@ ul{
 class ParseViewer{
   constructor(debugArea, treeNode, completedOperations){
     this.debugArea = debugArea
+    this.debugArea.innerHTML = 'a'
+
     this.rootTreeNode = treeNode
     this.viewingIndex = -1
     this.currentTreeNode = null
@@ -58,7 +61,10 @@ class ParseViewer{
         this.next()
       }
       else if (event.keyCode == 77){//m
-        this.showFirstNonmatch()
+        this.nextMatch()
+      }
+      else if (event.keyCode == 82){//r
+        this.viewingIndex = -1
       }
     })
   }
@@ -98,7 +104,7 @@ class ParseViewer{
       let nodeId = this.completedOperations[this.viewingIndex]
       if (typeof completedOperation == 'object'){
         nodeId = completedOperation.id
-        this.debugArea.innerHTML = JSON.stringify(completedOperation)
+        this.debugArea.innerHTML = JSON.stringify(completedOperation) + "|this.viewingIndex:" + this.viewingIndex
       }
 
       this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, nodeId)
@@ -107,16 +113,26 @@ class ParseViewer{
       }
     }
   }
-  showFirstNonmatch(){
-    for (let i = 0; i < this.completedOperations.length; i++){
+
+
+  nextMatch(){
+    if (this.currentTreeNode){
+      this.currentTreeNode.unhighlight()
+    }
+    for (let i = this.viewingIndex; i < this.completedOperations.length; i++){
       if (typeof this.completedOperations[i] == 'object'){
-        if (this.completedOperations[i].matchFound == false){
-          this.debugArea.innerHTML = i
+        if (this.completedOperations[i].matchFound == true){
+          let completedOperation = this.completedOperations[i]
+          let nodeId = completedOperation.id
+
+          this.currentTreeNode=this.getTreeNodeWithId(this.rootTreeNode, nodeId)
+          if (this.currentTreeNode){
+            this.currentTreeNode.highlight()
+          }
           break
         }
       }
     }
-
   }
 }
 //Treenode connects nodes with domElements
@@ -167,19 +183,7 @@ class TreeNode{
     ul.appendChild(li)
     domElement.appendChild(ul)
   }
-/*  
-  expand(){
-    //This refers to the li element that was clicked
-    if (!this.treeNode.expanded){
-      for (const childNode of this.treeNode.node.children) {
-        new TreeNode(childNode, this)
-      }
-      this.treeNode.expanded = true
-    }else{
-      this.treeNode.expanded = false
-    }
-  }
-*/
+
   highlight(){
     let ul = this.domElement.getElementsByTagName('ul')[0]
     //ul.style.border = "thick #ff0 solid"
@@ -268,6 +272,17 @@ NUMBER_CHARACTER = OR[
 RULE_NAME = STRING
 `
 
+var grammar2 = `
+STRING = MULTIPLE[STRING_CHARACTER]
+
+STRING_CHARACTER = OR[
+  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+  '0','1','2','3','4','5','6','7','8','9',
+  '_',
+  ' '
+]
+`
 //built-ins: WS_ALLOW_BOTH
 //left and right angle brackets
 //COMMA
@@ -293,9 +308,11 @@ POINT=SEQUENCE[
 ]
 
 `
+
+let endUserCode2 = `234324234`
 let tree2 = test_parser.parse(endUserCode)
 let debugArea = document.getElementById('debugArea')
-
+debugger
 let parseViewer = new ParseViewer(debugArea, tree, test_parser.matchRecorder)
 
 </script>

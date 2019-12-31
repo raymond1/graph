@@ -159,8 +159,10 @@ Programming.addCommandQueueCapability = function(object, commands) {
 
 Programming.getUniqueIDMaker = function (){
   var usedIDs = [];
+  var randomString = 0;
+
   function innerFunction(){
-    var randomString = "";
+//    var randomString = "";
 
     function inArray(value,array){
       for (var i = 0; i < array.length; i++){
@@ -169,9 +171,11 @@ Programming.getUniqueIDMaker = function (){
       return false;
     }
       
-    while (inArray(randomString,usedIDs)||randomString == ''){
-      var randomNumber = Math.floor(Math.random()*2);
-      randomString = randomString + randomNumber;
+    while (inArray(randomString,usedIDs)||randomString == ''||randomString == 0){
+/*      var randomNumber = Math.floor(Math.random()*2);
+      randomString = randomString + randomNumber;*/
+//      var randomNumber = 1
+      randomString = randomString + 1;
     }
     usedIDs.push(randomString);
     return randomString;

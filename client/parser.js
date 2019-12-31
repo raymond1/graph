@@ -37,6 +37,9 @@ class Node{
 
   //adds in more debugging capability
   match(string){
+    if (this.parser.matchRecorder.length == 24){
+      debugger
+    }
     this.parser.matchRecorder.push(this.id)
   }
 
@@ -87,7 +90,7 @@ class RuleList extends Node{
       return {matchFound: true, matchLength: matchInformation.matchLength}
   
       continue = false*/
-    }while(ruleMatched)
+    }while(ruleMatched&&tempString != '')
 
     return this.saveReturnValue({matchFound: true, matchedRules})
   }
@@ -212,13 +215,15 @@ class QuotedString extends Node{
   match(string){
     super.match(string)
 
-    let quotedString = '\'' + this['string'] + '\''
+    let quotedString = this['string']
     
+    let returnValue = {matchFound: false}
     if (string.substring(0, quotedString.length) == quotedString){
-      return this.saveReturnValue({matchFound: true, matchLength: quotedString.length})
-    }else{
-      return this.saveReturnValue({matchFound: false})
+      returnValue = {matchFound: true, matchLength: quotedString.length, string: this['string'], input: string}
+
     }
+    returnValue = this.saveReturnValue(returnValue)
+    return returnValue
   }
 }
 
