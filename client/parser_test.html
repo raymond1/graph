@@ -199,7 +199,6 @@ class TreeNode{
 
   highlight(){
     let ul = this.domElement
-    console.log(ul.tagName)
     //.getElementsByTagName('ul')[0]
     //ul.style.border = "thick #ff0 solid"
     ul.style.backgroundColor = "#ff0"
@@ -233,17 +232,17 @@ RULE = SEQUENCE[
 
 PATTERN_LIST = OR[
   SEQUENCE[
-    PATTERN,
+    WS_ALLOW_BOTH[PATTERN],
     MULTIPLE[
       SEQUENCE
       [
         ',',
-        PATTERN
+        WS_ALLOW_BOTH[PATTERN]
       ]
     ]
   ]
   ,
-  PATTERN
+  PATTERN,
 ]
 
 PATTERN = OR[
@@ -251,13 +250,17 @@ PATTERN = OR[
   OR,
   SEQUENCE,
   RULE_NAME,
-  WS_ALLOW_BOTH
+  WS_ALLOW_BOTH,
+  MULTIPLE,
+  CHARACTER_CLASS
 ]
 
 QUOTED_STRING= OR[
-  SEQUENCE[
-    SEQUENCE[S_QUOTE, STRING, S_QUOTE]
-  ]
+  'L_SQUARE_BRACKET',
+  'R_SQUARE_BRACKET',
+  'S_QUOTE',
+  'COMMA',
+  SEQUENCE[S_QUOTE, STRING, S_QUOTE]
 ]
 
 OR = [
@@ -269,6 +272,14 @@ SEQUENCE = SEQUENCE[
   'SEQUENCE', L_SQUARE_BRACKET, PATTERN_LIST, R_SQUARE_BRACKET
 ]
 
+MULTIPLE=SEQUENCE[
+  'MULTIPLE', L_SQUARE_BRACKET, PATTERN, R_SQUARE_BRACKET
+]
+
+CHARACTER_CLASS=[
+  'CHARACTER_CLASS', L_SQUARE_BRACKET, QUOTED_STRING, R_SQUARE_BRACKET
+]
+
 STRING = MULTIPLE[STRING_CHARACTER]
 
 STRING_CHARACTER = OR[
@@ -276,16 +287,41 @@ STRING_CHARACTER = OR[
   'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
   '0','1','2','3','4','5','6','7','8','9',
   '_',
-  ' '
+  ' ',
+  ',',
+  '(',
+  ')'
 ]
 
-NUMBER_STRING = MULTIPLE[NUMBER_CHARACTER]
-
-NUMBER_CHARACTER = OR[
-  '0','1','2','3','4','5','6','7','8','9'
+RULE_NAME_CHARACTER = OR[
+  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+  '0','1','2','3','4','5','6','7','8','9',
+  '_',
 ]
 
-RULE_NAME = STRING
+RULE_NAME = MULTIPLE[RULE_NAME_CHARACTER]
+
+WS_ALLOW_BOTH = [
+  SEQUENCE[
+    WHITESPACE,
+    PATTERN,
+    WHITESPACE
+  ],
+  SEQUENCE[
+    WHITESPACE,
+    PATTERN
+  ],
+  SEQUENCE[
+    PATTERN,
+    WHITESPACE
+  ],
+  PATTERN
+]
+
+WHITESPACE=[
+  ' ', '\n', '\t'
+]
 `
 
 var grammar2 = `
@@ -296,7 +332,7 @@ STRING_CHARACTER = OR[
   'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
   '0','1','2','3','4','5','6','7','8','9',
   '_',
-  ' '
+  ' ','\n','\t'
 ]
 `
 //built-ins: WS_ALLOW_BOTH
@@ -304,7 +340,7 @@ STRING_CHARACTER = OR[
 //COMMA
 //empty
 
-var test_parser = new Parser(grammar)
+var test_parser = new Parser(grammar2)
 let tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
 
 let endUserCode = `
@@ -326,7 +362,7 @@ POINT=SEQUENCE[
 `
 
 let endUserCode2 = `234324234`
-let tree2 = test_parser.parse(endUserCode)
+let tree2 = test_parser.parse(endUserCode2)
 let debugArea = document.getElementById('debugArea')
 debugger
 let parseViewer = new ParseViewer(debugArea, tree, test_parser.matchRecorder)
