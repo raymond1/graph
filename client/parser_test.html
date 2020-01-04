@@ -30,6 +30,9 @@ ul{
   <div id="test">
 
   </div>
+  <div id="test2">
+
+  </div>
   <div id="debugArea"></div>
 <script src='programming.js'></script>
 <script src='strings.js'></script>
@@ -138,6 +141,48 @@ class ParseViewer{
   }
 }
 
+class TreeViewer{
+  constructor(root, parentElement){
+    this.root = root
+    this.parentElement = parentElement
+    this.domElement = document.createElement('pre')
+    this.parentElement.appendChild(this.domElement)
+  }
+
+  getOutputString(metadata){
+    let outputString = '  '.repeat(metadata['depth']) + '*****************************\n'
+
+    let keys = Object.keys(metadata)
+    for(let i = 0; i < keys.length; i++){
+      let keyValue = metadata[keys[i]]
+      if (typeof keyValue == 'object'){
+        if (keyValue !== null){
+          if (Array.isArray(keyValue)){
+            for (let j = 0; j < keyValue.length; j++){
+              outputString += this.getOutputString(keyValue[j])
+            }
+          }else{
+            outputString += this.getOutputString(keyValue)
+          }
+        }
+      }else{
+        outputString += '  '.repeat(metadata['depth']) + keys[i] + ":" + keyValue + '\n'
+      }
+    }
+    return outputString
+  }
+  
+  display(metadata){
+    let outputString = ''
+    if (typeof metadata == 'undefined'){
+      metadata = this.root
+    }
+    outputString = this.getOutputString(metadata)
+    let outputTextNode = document.createTextNode(outputString)
+    this.domElement.appendChild(outputTextNode)
+  }
+}
+
 //Treenode connects nodes with domElements
 //A Treenode is not the node data it contains
 //A Treenode is not the domElement that is clicked on
@@ -216,6 +261,11 @@ class TreeNode{
   }
 }
 
+class ParseTreeNode{
+  constructor(node, parentElement){
+
+  }
+}
 var grammar =
 
 `
@@ -363,9 +413,11 @@ POINT=SEQUENCE[
 
 let endUserCode2 = `234324234`
 let tree2 = test_parser.parse(endUserCode2)
+let treeViewer = new TreeViewer(tree2, document.querySelector('#test2'))
+treeViewer.display()
 let debugArea = document.getElementById('debugArea')
-debugger
-let parseViewer = new ParseViewer(debugArea, tree, test_parser.matchRecorder)
+//debugger
+//let parseViewer = new ParseViewer(debugArea, tree2, test_parser.matchRecorder)
 
 </script>
 </body>

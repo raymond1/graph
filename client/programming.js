@@ -157,12 +157,19 @@ Programming.addCommandQueueCapability = function(object, commands) {
   }.bind(object)
 }
 
+Programming.getSerialIDMaker = function(){
+  var id = 0
+  return function(){
+    id = id + 1
+    return id
+  }
+}
+
 Programming.getUniqueIDMaker = function (){
   var usedIDs = [];
-  var randomString = 0;
+  var randomString = "";
 
   function innerFunction(){
-//    var randomString = "";
 
     function inArray(value,array){
       for (var i = 0; i < array.length; i++){
@@ -171,11 +178,9 @@ Programming.getUniqueIDMaker = function (){
       return false;
     }
       
-    while (inArray(randomString,usedIDs)||randomString == ''||randomString == 0){
-/*      var randomNumber = Math.floor(Math.random()*2);
-      randomString = randomString + randomNumber;*/
-//      var randomNumber = 1
-      randomString = randomString + 1;
+    while (inArray(randomString,usedIDs)||randomString == ''){
+      var randomNumber = Math.floor(Math.random()*2);
+      randomString = randomString + randomNumber;
     }
     usedIDs.push(randomString);
     return randomString;

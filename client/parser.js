@@ -1,7 +1,14 @@
-let uniqueIdMaker = Programming.getUniqueIDMaker()
+let serialIdMaker = Programming.getSerialIDMaker()
+//Factory class for creating nodes
+class NodeCreator{
+  constructor(){
+    this.idMaker = Programming.getSerialIDMaker()
+  }
+}
+
 class Node{
   constructor(parser){
-    this.idCreator = uniqueIdMaker
+    this.idCreator = serialIdMaker
     this.parser = parser
     this.attributes = []
     this.setAttribute('id', this.idCreator())
@@ -33,9 +40,8 @@ class Node{
     return children
   }
 
-  saveReturnValue(object){
+  saveData(object){
     object.id = this.id
-    if (object.matchFound)
     this.parser.matchRecorder.push(object)
     return object
   }
@@ -49,49 +55,41 @@ class RuleList extends Node{
   }
   
   //produces rule nodes as long as they are found
-  match(string, metaData = {depth: 0}){
-    
-    let matchedRules = []
-    let ruleMatched = false
+  match(string, metadata = {depth: 0, parentId: null}){
+    let matchFound = false //indicates if rulelist is valid
+    let ruleMatched = false //used in the do loop to determine if any of the rules match
     let tempString = string
-    let returnValue = {matchFound: false}
-    let matchInformationList = []
+
+    let internalMatches = [] //internalMatches refers to the rules that are matched while matching a rule list
     do{
       ruleMatched = false
       let matchInformation = null
-      let matchingRule = null
       for (let i = 0; i < this.rules.length; i++){
-        metaData.depth = 1
-        matchInformation = this.rules[i].match(tempString, {metaData})
+        matchInformation = this.rules[i].match(tempString, {depth: 1, parentId: this.id})
         if (matchInformation.matchFound){
           ruleMatched = true
-          matchingRule = this.rules[i]
           break
         }
       }
       if (ruleMatched){
-        matchInformationList.push(matchInformation)
+        internalMatches.push(matchInformation)
         tempString = tempString.substring(matchInformation.matchLength)
-        let newNode = new Node()
-        newNode.setAttribute('name', matchingRule.name)
-
-        //Also need to change the string
-        //string = string.substring...
-        matchedRules.push(newNode)
       }else{
-
         break
       }
     }while(ruleMatched&&tempString != '')
 
-    if (matchInformationList.length > 0){
-      let totalLength = 0
-      for (let i = 0; i < matchInformationList.length; i++){
-        totalLength = totalLength + matchInformationList[i].matchLength
+    let totalLength = 0
+    if (ruleMatched){
+      for (let i = 0; i < internalMatches.length; i++){
+        totalLength = totalLength + internalMatches[i].matchLength
       }
-      returnValue = {matchFound: true, matchLength: totalLength}
+      matchFound = true
     }
-    this.saveReturnValue(returnValue)
+
+    let returnValue = {type: this['friendly node type name'],id: this.id, depth: metadata.depth, matchFound, matchLength: totalLength, matchString: string.substring(0, totalLength), internalMatches}
+
+    this.saveData(returnValue)
     return returnValue
   }
 }
@@ -104,15 +102,15 @@ class Rule extends Node{
     this.setAttribute('name', name)
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-    let returnInfo = {matchFound: false}
-    let matchInfo = this.pattern.match(string,metaData)
-    if (matchInfo.matchFound){
-      returnInfo = {matchFound:true, matchLength: matchInfo.matchLength}
-    }
-    this.saveReturnValue(returnInfo)
-    return returnInfo
+  match(string,metadata){
+    let matchInfo = this.pattern.match(string,{depth: metadata.depth + 1, parentId: this.id})
+    let matchLength = matchInfo.matchLength
+    let internalMatches = matchInfo
+
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength, matchString: string.substring(0, matchLength), name: this.name, internalMatches}
+
+    this.saveData(returnValue)
+    return returnValue
   }
 }
 
@@ -125,14 +123,16 @@ class RuleName extends Node{
     this.setAttribute('friendly node type name', 'rule name')
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
+  match(string,metadata){
     let rule = this.parser.getRule(this.value)
-    let returnValue = {matchFound: false}
+    let matchInfo 
     if (rule != null){
-      returnValue = rule.match(string,metaData)
+      matchInfo = rule.match(string,{depth: metadata.depth + 1, parentId: this.id})
     }
-    this.saveReturnValue(returnValue)
+
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength: matchInfo.matchLength, matchString: string.substring(0, matchInfo.matchLength), value: this.value, internalMatches: matchInfo}
+
+    this.saveData(returnValue)
     return returnValue
   }
 }
@@ -144,14 +144,15 @@ class Sequence extends Node{
     this.setAttribute('friendly node type name', 'sequence')
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
+  match(string,metadata){
     let tempString = string
     let totalMatchLength = 0
-    let returnInfo = {matchFound: false}
+
+    let matchInfoList = []
     let matchInfo
     for (let i = 0; i < this['patterns'].length; i++){
-      matchInfo = this['patterns'][i].match(tempString,metaData)
+      matchInfo = this['patterns'][i].match(tempString,{depth: metadata.depth + 1, parentId: this.id})
+      matchInfoList.push(matchInfo)
       if (!matchInfo.matchFound){
         break;
       }else{
@@ -160,11 +161,11 @@ class Sequence extends Node{
       }
     }
 
-    if (matchInfo.matchFound){
-      returnInfo = {matchFound:true, matchLength: totalMatchLength}
-    }
-    this.saveReturnValue(returnInfo)
-    return returnInfo
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength: totalMatchLength, matchString: string.substring(0, totalMatchLength), internalMatches: matchInfoList}
+
+    this.saveData(returnValue)
+
+    return returnValue
   }
 }
 
@@ -176,19 +177,22 @@ class Or extends Node{
     this.setAttribute('friendly node type name', 'or')
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-    
-    let returnInfo = {matchFound: false}
+  match(string,metadata){
+    let matchInfoList = []
+    let matchInfo
     for (let i = 0; i < this.patterns.length; i++){
-      let matchInfo = this['patterns'][i].match(string,metaData)
+      matchInfo = this['patterns'][i].match(string,{depth: metadata.depth + 1, parentId: this.id})
+      matchInfoList.push(matchInfo)
       if (matchInfo.matchFound){
-        returnInfo = matchInfo
         break
       }
     }
-    this.saveReturnValue(returnInfo)
-    return returnInfo
+
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength: matchInfo.matchLength, matchString: string.substring(0, matchInfo.matchLength), internalMatches: matchInfoList}
+
+    this.saveData(returnValue)
+
+    return returnValue
   }
 }
 
@@ -202,23 +206,21 @@ class WSAllowBoth extends Node{
     this.setAttribute('friendly node type name', 'ws allow both')
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-
-    let returnValue = {matchFound: false}
-
+  match(string,metadata){
+    let matchLength = 0
     let leadingWhitespace = Strings.swallow(string, Strings.whitespace_characters)
 
     let remainderString = string.substring(leadingWhitespace.length)
-    let innerPatternMatchInfo = this['inner pattern'].match(remainderString,metaData)
-    if (innerPatternMatchInfo.matchFound){
-      let afterInnerPattern = remainderString.substring(innerPatternMatchInfo.matchLength)
+    let matchInfo = this['inner pattern'].match(remainderString,{depth: metadata.depth + 1, parentId: this.id})
+    if (matchInfo.matchFound){
+      let afterInnerPattern = remainderString.substring(matchInfo.matchLength)
       let trailingWhitespace = Strings.swallow(afterInnerPattern, Strings.whitespace_characters)
-
-      returnValue = {matchFound: true, matchLength: leadingWhitespace.length + innerPatternMatchInfo.matchLength + trailingWhitespace.length}
+      matchFound = true
+      matchLength = leadingWhitespace.length + matchInfo.matchLength + trailingWhitespace.length
     }
-    
-    this.saveReturnValue(returnValue)
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength, matchString: string.substring(0, matchLength), internalMatches: matchInfo.internalMatches}
+    this.saveData(returnValue)
+
     return returnValue
     
     //is it just the pattern with no white space at the front?
@@ -228,9 +230,56 @@ class WSAllowBoth extends Node{
   }
 }
 
+class Multiple extends Node{
+  constructor(parser,pattern){
+    super(parser)
+    this.setAttribute('pattern', pattern)
+    this.setAttribute('friendly node type name', 'multiple')
+  }
 
-//A Quoted string is a ' followed by a string followed by a '
+  match(string,metadata){
+    let totalMatchLength = 0
+
+    let matchInfoList = []
+    let matchInfo = this.pattern.match(string,{depth: metadata.depth + 1, parentId: this.id})
+    matchInfoList.push(matchInfo)
+    while(matchInfo.matchFound){
+      totalMatchLength = totalMatchLength + matchInfo.matchLength
+      string = string.substring(matchInfo.matchLength)
+      matchInfo = this.pattern.match(string,{depth: metadata.depth + 1, parentId: this.id})
+      matchInfoList.push(matchInfo)
+    }
+    let matchFound = false
+    if (matchInfoList.length > 0){
+      matchFound = true
+    }
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound, matchLength: totalMatchLength, matchString: string.substring(0, totalMatchLength), internalMatches: matchInfoList}
+    this.saveData(returnValue)
+    return returnValue
+  }
+}
+
+
+class Pattern extends Node{
+  constructor(parser,innerPattern){
+    super(parser)
+    this.setAttribute('friendly node type name', 'pattern')
+    this.setAttribute('inner pattern', innerPattern)//is it a 'quoted string', an 'or', a 'sequence', a 'rule name', or a 'ws allow both'?
+  }
+
+  match(string,metadata){
+    let matchInfo = this['inner pattern'].match(string,{depth: metatdata.depth + 1, parentId: this.id})
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength: matchInfo.matchLength, matchString: string.substring(0, matchInfo.matchLength), internalMatches: matchInfo}
+    this.saveData(returnValue)
+
+    return matchInfo
+  }
+}
+
+
+//A Quoted string in the input grammar is a ' followed by a string followed by a '
 //Currently, there is no such thing as an empty string ''. You must have something in between.
+//The string in between the two quotes is used to match
 class QuotedString extends Node{
   constructor(parser,string){
     super(parser)
@@ -238,16 +287,22 @@ class QuotedString extends Node{
     this.setAttribute('friendly node type name', 'quoted string')
   }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-
-    let quotedString = this['string']
+  match(string,metadata){
+    let internalString = this['string']
     
-    let returnValue = {matchFound: false}
-    if (string.substring(0, quotedString.length) == quotedString){
-      returnValue = {matchFound: true, matchLength: quotedString.length, string: this['string']}
+    let matchFound = false
+    if (string.substring(0, internalString.length) == internalString){
+      matchFound = true
     }
-    returnValue = this.saveReturnValue(returnValue)
+
+    let matchLength = 0
+    if (matchFound){
+      matchLength = internalString.length
+    }
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchFound, matchLength, matchString: string.substring(0, internalString.length), internalMatches: null}
+
+    this.saveData(returnValue)
+
     return returnValue
   }
 }
@@ -260,7 +315,7 @@ class CharacterClass extends Node{
     this.setAttribute('string', quotedString.string)//is it a 'quoted string', an 'or', a 'sequence', a 'rule name', or a 'ws allow both'?
   }
 
-  match(string,metaData){
+  match(string,metadata){
     let matchingString = ''
     for (let i = 1; i < string.length; i++){
       let headString = string.substring(0,i)
@@ -271,122 +326,31 @@ class CharacterClass extends Node{
       }
     }
 
-    let returnInfo = {matchFound: false}
+    let matchFound = false
     if (matchingString.length > 0){
-      returnInfo = {matchFound:true, matchLength: matchingString.length}
-    }
-    this.saveReturnValue(returnInfo)
-    return returnInfo
-  }
-
-}
-
-class Pattern extends Node{
-  constructor(parser,innerPattern){
-    super(parser)
-    this.setAttribute('friendly node type name', 'pattern')
-    this.setAttribute('inner pattern', innerPattern)//is it a 'quoted string', an 'or', a 'sequence', a 'rule name', or a 'ws allow both'?
-  }
-
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-
-    let matchInfo = this['inner pattern'].match(string,metaData)
-    this.saveReturnValue(matchInfo)
-    return matchInfo
-  }
-}
-
-//patterns is an array of patterns
-//patternListType is either 'or' or 'sequence'
-class PatternList extends Node{
-  constructor(parser,patterns, patternListType){
-    super(parser)
-    this.setAttribute('patterns', patterns)
-    this.setAttribute('pattern list type', patternListType)
-    this.setAttribute('friendly node type name', 'pattern list')
-  }
-
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-
-    let returnValue = {matchFound: false}
-    if (this['pattern list type'] == 'or'){
-      for (let i = 0; i < this['patterns'].length; i++){
-        let matchInfo = this['patterns'][i].match(string,metaData)
-
-        if (matchInfo.matchFound){
-          returnValue = matchInfo
-        }
-      }
-    }else if (this['pattern list type'] == 'sequence'){
-      let patterns = this['patterns']
-      let tempString = string
-      let matchInfoArray = []
-  
-      for (let i = 0; i < patterns.length; i++){
-        let matchInfo = patterns[i].match(tempString,metaData)
-
-        matchInfoArray.push(matchInfo) 
-        if (!matchInfo.matchFound){
-          break
-        }else{
-          tempString = tempString.substring(matchInfo.length)
-        }
-      }
-      
-      if (matchInfoArray[0].matchFound){
-        let totalMatchLength = 0
-        for (let i = 0; i < matchInfoArray.length; i++){
-          totalMatchLength += matchInfoArray[i].matchLength
-        }
-        returnValue = {matchFound: true, matchLength: totalMatchLength}  
-      }
+      matchFound = true
     }
 
-    this.saveReturnValue(returnValue)
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchFound, matchLength: matchString.length, matchString: string.substring(0, matchString.length), internalMatches: null}
+    this.saveData(returnValue)
+
     return returnValue
   }
+
 }
 
-class Multiple extends Node{
-  constructor(parser,pattern){
-    super(parser)
-    this.setAttribute('pattern', pattern)
-    this.setAttribute('friendly node type name', 'multiple')
-  }
 
-  match(string,metaData){
-    metaData.depth = metaData.depth + 1
-
-    let totalMatchLength = 0
-    let matchInfo = this.pattern.match(string,metaData)
-    let returnInfo = {matchFound: false}
-    while(matchInfo.matchFound){
-      totalMatchLength = totalMatchLength + matchInfo.matchLength
-      string = string.substring(matchInfo.matchLength)
-      matchInfo = this.pattern.match(string,metaData)
-    }
-
-    if (totalMatchLength > 0){
-      returnInfo = {matchFound: true, matchLength: totalMatchLength}
-    }
-
-    this.saveReturnValue(returnInfo)
-    return returnInfo
-  }
-}
 //Usage: let parser = new Parser(grammar_string)
 //parser.parse(input_string)
 //In other words, the grammar that the parser needs to parse is passed into the constructor during the creation on the Parser object
 //Then, the parse function is run, taking in an input_string representing a small set of data given in the language specified by the language loaded by the Parser object during its construction
 class Parser{
-
   constructor(grammarString){
     this.validStringCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_= \n\t,'
     this.validRuleNameCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
     this.runningGrammar = this.grammarize(grammarString)
     this.rules = this.getRules(this.runningGrammar)
+    this.nodeCreator = new NodeCreator()
     this.matchRecorder = [] //collects the names of the classes whose match functions were run
   }
 
