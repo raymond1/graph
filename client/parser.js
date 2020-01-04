@@ -1,3 +1,4 @@
+globalA = 0
 let serialIdMaker = Programming.getSerialIDMaker()
 //Factory class for creating nodes
 class NodeCreator{
@@ -238,15 +239,18 @@ class Multiple extends Node{
   }
 
   match(string,metadata){
+    let tempString = string
     let totalMatchLength = 0
 
     let matchInfoList = []
-    let matchInfo = this.pattern.match(string,{depth: metadata.depth + 1, parentId: this.id})
-    matchInfoList.push(matchInfo)
+    let matchInfo = this.pattern.match(tempString,{depth: metadata.depth + 1, parentId: this.id})
+    if (matchInfo.matchFound){
+      matchInfoList.push(matchInfo)
+    }
     while(matchInfo.matchFound){
       totalMatchLength = totalMatchLength + matchInfo.matchLength
-      string = string.substring(matchInfo.matchLength)
-      matchInfo = this.pattern.match(string,{depth: metadata.depth + 1, parentId: this.id})
+      tempString = string.substring(matchInfo.matchLength)
+      matchInfo = this.pattern.match(tempString,{depth: metadata.depth + 1, parentId: this.id})
       matchInfoList.push(matchInfo)
     }
     let matchFound = false
@@ -317,9 +321,11 @@ class CharacterClass extends Node{
 
   match(string,metadata){
     let matchingString = ''
-    for (let i = 1; i < string.length; i++){
+    //i is the number of characters to take for comparison
+    //i goes from 1, 2, 3, ... to the length of the string
+    for (let i = 1; i <= string.length; i++){
       let headString = string.substring(0,i)
-      if (Strings.contains_only(headString,this['quoted string'])){
+      if (Strings.contains_only(headString,this['string'])){
         matchingString = headString
       }else{
         break
@@ -331,7 +337,7 @@ class CharacterClass extends Node{
       matchFound = true
     }
 
-    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchFound, matchLength: matchString.length, matchString: string.substring(0, matchString.length), internalMatches: null}
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchFound, matchLength: matchingString.length, matchString: string.substring(0, matchingString.length), internalMatches: null}
     this.saveData(returnValue)
 
     return returnValue
@@ -729,6 +735,10 @@ class Parser{
   }
 
   grammarize_CHARACTER_CLASS(input_string){
+if (globalA == 0){
+  alert()
+  globalA = 1
+}
     var trimmed_string = input_string.trim()
  
     var first_few_characters_of_trimmed_string = trimmed_string.substring(0,'CHARACTER_CLASS'.length)
@@ -744,7 +754,7 @@ class Parser{
     if (location_of_last_right_bracket < 0) return null
     if (location_of_last_right_bracket != trimmed_string.length - 1) return null
     
-    var string_in_between_square_brackets = trimmed_string.substring(location_of_first_left_bracket + 1, location_of_last_right_bracket)
+    var string_in_between_square_brackets = trimmed_string.substring(location_of_first_left_bracket + 1, location_of_last_right_bracket).trim()
 
     var quotedString = this.grammarize_QUOTED_STRING(string_in_between_square_brackets)
     if (quotedString != null){
