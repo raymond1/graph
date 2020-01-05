@@ -1,4 +1,3 @@
-globalA = 0
 let serialIdMaker = Programming.getSerialIDMaker()
 //Factory class for creating nodes
 class NodeCreator{
@@ -216,10 +215,9 @@ class WSAllowBoth extends Node{
     if (matchInfo.matchFound){
       let afterInnerPattern = remainderString.substring(matchInfo.matchLength)
       let trailingWhitespace = Strings.swallow(afterInnerPattern, Strings.whitespace_characters)
-      matchFound = true
       matchLength = leadingWhitespace.length + matchInfo.matchLength + trailingWhitespace.length
     }
-    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength, matchString: string.substring(0, matchLength), internalMatches: matchInfo.internalMatches}
+    let returnValue = {type: this['friendly node type name'], id: this.id, depth: metadata.depth, matchFound: matchInfo.matchFound, matchLength, matchString: string.substring(0, matchLength), internalMatches: matchInfo}
     this.saveData(returnValue)
 
     return returnValue
@@ -249,7 +247,7 @@ class Multiple extends Node{
     }
     while(matchInfo.matchFound){
       totalMatchLength = totalMatchLength + matchInfo.matchLength
-      tempString = string.substring(matchInfo.matchLength)
+      tempString = tempString.substring(matchInfo.matchLength)
       matchInfo = this.pattern.match(tempString,{depth: metadata.depth + 1, parentId: this.id})
       matchInfoList.push(matchInfo)
     }
@@ -735,10 +733,6 @@ class Parser{
   }
 
   grammarize_CHARACTER_CLASS(input_string){
-if (globalA == 0){
-  alert()
-  globalA = 1
-}
     var trimmed_string = input_string.trim()
  
     var first_few_characters_of_trimmed_string = trimmed_string.substring(0,'CHARACTER_CLASS'.length)

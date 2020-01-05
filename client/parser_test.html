@@ -375,17 +375,34 @@ WHITESPACE=[
 `
 
 var grammar2 = `
-STRING = MULTIPLE[STRING_CHARACTER2]
+RULE_LIST = OR[
+  SEQUENCE[
+    WS_ALLOW_BOTH[RULE],
+    MULTIPLE[
+      SEQUENCE[
+        WS_ALLOW_BOTH[','],
+        RULE
+      ]
+    ]
+  ],
+  RULE
+]
+
+RULE = SEQUENCE[
+  WS_ALLOW_BOTH[RULE_NAME],
+  '=',
+  WS_ALLOW_BOTH[MULTIPLE[STRING_CHARACTER2]]
+]
+
+RULE_NAME=[
+  CHARACTER_CLASS['ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_']
+]
 
 STRING_CHARACTER2 = CHARACTER_CLASS[
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 ]
 
-STRING_CHARACTER = OR[
-  'A', 'B', 'C', 'D', 'E', 'F', 'G','H','I', 'J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-  '0','1','2','3','4','5','6','7','8','9',
-  '_',
+WHITESPACE=[
   ' ','\n','\t'
 ]
 `
@@ -393,8 +410,7 @@ STRING_CHARACTER = OR[
 //left and right angle brackets
 //COMMA
 //empty
-alert('a')
-debugger;
+
 var test_parser = new Parser(grammar2)
 
 let tree = new TreeNode(test_parser.runningGrammar, document.querySelector('#test'))
@@ -417,7 +433,13 @@ POINT=SEQUENCE[
 
 `
 
-let endUserCode2 = `234324234`
+let endUserCode2 = 
+`
+234324=234asf
+jhjkh=9898
+ASASA_32423=5776hgfhf
+`
+debugger
 let tree2 = test_parser.parse(endUserCode2)
 let treeViewer = new TreeViewer(tree2, document.querySelector('#test2'))
 treeViewer.display()
