@@ -9,6 +9,8 @@
     <script src='visualengine.js'></script>
     <script src='virtualgrid.js'></script>
     <script src='mouse.js'></script>
+    <script src='coordinate_system.js'></script>
+    <script src='fifo_queue.js'></script>
     <script src='graph.js'></script>
     <script src='debugger.js'></script>
     <script src='camera.js'></script>
@@ -33,11 +35,11 @@
 var graph = new Graph()
 graph.sceneString = 
 "\n\
-set scene begin\n\
-  set point begin\n\
-    0,0,0\n\
-  set point end\n\
-set scene end"
+scene\n\
+\tpoints\n\
+\t\t0,0,0\n\
+\t\t1,0,0\n\
+"
 
 var construct_table = new ConstructTable([
   {'construct': 'root', 'pattern type': 'composed of', pattern: {'set scene': 'many or 0'}, 'may have children': true, 'allowed children': ['set scene'], 'root': true},
